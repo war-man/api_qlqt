@@ -1,0 +1,60 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="lib\**" />
+    <Compile Remove="TClass\**" />
+    <Content Remove="lib\**" />
+    <Content Remove="TClass\**" />
+    <EmbeddedResource Remove="lib\**" />
+    <EmbeddedResource Remove="TClass\**" />
+    <None Remove="lib\**" />
+    <None Remove="TClass\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\PromotionController.cs" />
+    <Compile Remove="DTO\TransferGiftDraftDTO.cs" />
+    <Compile Remove="Entities\TransferGiftDraft.cs" />
+    <Compile Remove="Maps\TransferGiftDraftMap.cs" />
+    <Compile Remove="Services\FuntionServices.cs" />
+    <Compile Remove="Services\PromotionService.cs" />
+    <Compile Remove="Services\TransferOrganization.cs" />
+    <Compile Remove="Sessions\SessionExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="DownloadWordExcel\" />
+    <Folder Include="wwwroot\" />
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="FluentNHibernate" Version="2.1.2" />
+    <PackageReference Include="GitForWindows" Version="2.23.0" />
+    <PackageReference Include="GitInfo" Version="2.0.20">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.1.10" />
+    <PackageReference Include="Serilog.Extensions.Logging.File" Version="1.1.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.6.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Aspose.Cells">
+      <HintPath>lib\Aspose.Cells.dll</HintPath>
+    </Reference>
+    <Reference Include="Aspose.Words">
+      <HintPath>lib\Aspose.Words.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

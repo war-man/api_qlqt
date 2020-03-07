@@ -1,0 +1,17 @@
+GitBranch=master;
+GitCommit=aac6762;
+GitSha=aac67624664f7fe57730af0bf952538996e483aa;
+GitBaseVersion=0.0.0;
+GitBaseVersionSource=;
+GitBaseVersionMajor=0;
+GitBaseVersionMinor=0;
+GitBaseVersionPatch=0;
+GitCommits=33;
+GitTag=;
+GitBaseTag=;
+GitSemVerMajor=0;
+GitSemVerMinor=0;
+GitSemVerPatch=33;
+GitSemVerLabel=;
+GitSemVerDashLabel=;
+GitSemVerSource=Default
