@@ -41,7 +41,7 @@ namespace Api.ManagerGift.Services
                             Name = obj.Name,
                             IsLeader = obj.IsLeader
                         });
-                        result = "Add success";
+                        result = "Thành công";
                     }
                     else
                     {
@@ -70,7 +70,7 @@ namespace Api.ManagerGift.Services
                         position.Name = obj.Name;
                         position.IsLeader = obj.IsLeader;
                         ss.Update(position);
-                        result = "Edit success";
+                        result = "Cập nhật thành công";
                     }
                     else
                     {
@@ -94,7 +94,7 @@ namespace Api.ManagerGift.Services
                 {
                     var obj = ss.Get<Position>(id);
                     ss.Delete(obj);
-                    result = "Delete success";
+                    result = "Đã xóa";
                 }
                 catch (Exception ex)
                 {

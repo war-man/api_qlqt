@@ -65,7 +65,7 @@ namespace Api.ManagerGift.Services
                             Status = obj.Status,
                             MonthId = int.Parse(DateTime.UtcNow.ToString("yyyyMM"))
                         });
-                        result = "Add success";
+                        result = "Thành công";
                     }
                     else
                     {
@@ -99,7 +99,7 @@ namespace Api.ManagerGift.Services
                         user.FullName = obj.FullName;
                         user.Email = obj.Email;
                         ss.Update(user);
-                        result = "Edit success";
+                        result = "Cập nhật thành công";
                     }
                     else
                     {
@@ -124,7 +124,7 @@ namespace Api.ManagerGift.Services
                 {
                     var obj = ss.Get<User>(id);
                     ss.Delete(obj);
-                    result = "Delete success";
+                    result = "Đã xóa";
                 }
                 catch (Exception ex)
                 {

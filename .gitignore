@@ -5,6 +5,8 @@
 /.pnp
 .pnp.js
 /.vs
+/Api.ManagerGift/bin
+/Api.ManagerGift/obj
 
 # testing
 /coverage

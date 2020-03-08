@@ -92,7 +92,7 @@ namespace Api.ManagerGift.Services
                             CreatedBy = userDTO.Id,
                             CreatedDate = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture),
                         });
-                        result = "Add success";
+                        result = "Thành công";
                     }
                     else
                     {
@@ -125,7 +125,7 @@ namespace Api.ManagerGift.Services
                         unit.UpdatedBy = userDTO.Id;
                         unit.UpdatedDate = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture);
                         ss.Update(unit);
-                        result = "Edit success";
+                        result = "Cập nhật thành công";
                     }
                     else
                     {
@@ -149,7 +149,7 @@ namespace Api.ManagerGift.Services
                 {
                     var obj = ss.Get<Unit>(id);
                     ss.Delete(obj);
-                    result = "Delete success";
+                    result = "Đã xóa";
                 });
             }
             catch (Exception ex)

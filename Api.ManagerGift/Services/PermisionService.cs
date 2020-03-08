@@ -94,7 +94,7 @@ namespace Api.ManagerGift.Services
                         if (permision != null)
                         {
                             permision.CheckAction = !per.CheckAction;
-                            result = "Edit success";
+                            result = "Cập nhật thành công";
                         }
                     });
                 }

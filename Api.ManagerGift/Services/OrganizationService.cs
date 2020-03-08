@@ -87,7 +87,7 @@ namespace Api.ManagerGift.Services
                             Address = obj.Address,
                             Region = obj.Region
                         });
-                        result = "Add success";
+                        result = "Thành công";
                     }
                     else
                     {
@@ -120,7 +120,7 @@ namespace Api.ManagerGift.Services
                         organization.Address = obj.Address;
                         organization.Region = obj.Region;
                         ss.Update(organization);
-                        result = "Edit success";
+                        result = "Cập nhật thành công";
                     }
                     else
                     {
@@ -144,7 +144,7 @@ namespace Api.ManagerGift.Services
                 {
                     var obj = ss.Get<Organization>(id);
                     ss.Delete(obj);
-                    result = "Delete success";
+                    result = "Đã xóa";
                 }
                 catch (Exception ex)
                 {

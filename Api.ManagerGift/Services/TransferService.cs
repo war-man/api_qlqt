@@ -1237,7 +1237,7 @@ namespace Api.ManagerGift.Services
                     ss.CreateSQLQuery($"delete [TransferDetail] where TransferId = '{id}'").UniqueResult();
                     ss.CreateSQLQuery($"delete [[TransferGiftLog]] where TransferGiftId = '{id}'").UniqueResult();
                     ss.CreateSQLQuery($"delete [TransferGift] where Id = '{id}'").UniqueResult();
-                    result = "Delete success";
+                    result = "Đã xóa";
                 }
                 catch (Exception ex)
                 {

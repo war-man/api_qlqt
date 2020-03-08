@@ -97,7 +97,7 @@ namespace Api.ManagerGift.Services
                             CreatedDate = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture),
                             Status = true
                         });
-                        result = "Add success";
+                        result = "Thành công";
                     }
                     else
                     {
@@ -130,7 +130,7 @@ namespace Api.ManagerGift.Services
                         optiongift.UpdatedBy = userDTO.Id;
                         optiongift.UpdatedDate = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture);
                         ss.Update(optiongift);
-                        result = "Edit success";
+                        result = "Cập nhật thành công";
                     }
                     else
                     {
@@ -154,7 +154,7 @@ namespace Api.ManagerGift.Services
                 {
                     var obj = ss.Get<OptionGift>(id);
                     ss.Delete(obj);
-                    result = "Delete success";
+                    result = "Đã xóa";
                 });
             }
             catch (Exception ex)
