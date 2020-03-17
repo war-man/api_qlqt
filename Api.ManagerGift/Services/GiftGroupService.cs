@@ -24,7 +24,7 @@ namespace Api.ManagerGift.Services
                     var lstUser = ss.Query<User>().ToList();
                     var lstGG = ss.QueryOver<GiftGroup>()
                         .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere)
-                            || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.Name).Asc.List();
+                            || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.CreatedDate).Desc.List();
 
                     lstResults.ListGiftGroupOutput =
                         lstGG.Skip((pageNo - 1) * pageSize).Take(pageSize)

@@ -25,7 +25,7 @@ namespace Api.ManagerGift.Services
                     var lstUser = ss.Query<User>().ToList();
                     var lstUnit = ss.QueryOver<Unit>()
                         .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere) 
-                            || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.Name).Asc.List();
+                            || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.CreatedDate).Desc.List();
                     lstResults.ListUnitOutput =
                         lstUnit.Skip((pageNo - 1) * pageSize).Take(pageSize)
                         .Select(p => new

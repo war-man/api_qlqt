@@ -168,7 +168,7 @@ namespace Api.ManagerGift.Services
                             }
                         }
                         else
-                            result = $"{obj.Code} đã được sử dụng!\nAnh/Chị vui lòng kiểm tra lại.";
+                            result = $"Mã {obj.Code} đã được sử dụng!\nAnh/Chị vui lòng kiểm tra lại.";
                     }
                     else
                         result = Constants.CHUC_NANG_NHAN_VIEN;

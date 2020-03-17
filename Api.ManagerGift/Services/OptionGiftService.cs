@@ -23,7 +23,7 @@ namespace Api.ManagerGift.Services
                     var lstUser = ss.Query<User>().ToList();
                     var lstOG = ss.QueryOver<OptionGift>()
                         .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere)
-                            || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.Name).Asc.List();
+                            || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.CreatedDate).Desc.List();
 
                     lstResults.ListOptionGiftOutput =
                         lstOG.Skip((pageNo - 1) * pageSize).Take(pageSize)
