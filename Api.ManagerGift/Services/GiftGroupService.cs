@@ -13,10 +13,11 @@ namespace Api.ManagerGift.Services
 {
     public class GiftGroupService
     {
-        public dynamic Get(int pageNo, int pageSize, string textSearch)
+        public dynamic Get(int pageNo, int pageSize, string textSearch, int sltPermisionId, string dateSearch)
         {
             dynamic lstResults = new ExpandoObject();
             textSearch = string.IsNullOrWhiteSpace(textSearch) ? "" : textSearch;
+            dateSearch = string.IsNullOrWhiteSpace(dateSearch) ? "" : dateSearch;
             SessionManager.DoWork(ss =>
             {
                 try
@@ -25,6 +26,16 @@ namespace Api.ManagerGift.Services
                     var lstGG = ss.QueryOver<GiftGroup>()
                         .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere)
                             || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.CreatedDate).Desc.List();
+                    if (sltPermisionId != 0)
+                    {
+                        var userForPermision = lstUser.Where(w => w.PermisionId == sltPermisionId).Select(w => w.Id).ToList();
+                        lstGG = lstGG.Where(w => userForPermision.Contains(w.CreatedBy.Value)).ToList();
+                    }
+                    if (dateSearch != "")
+                    {
+                        DateTime oDate = Convert.ToDateTime(dateSearch);
+                        lstGG = lstGG.Where(w => oDate.ToString("yyyy-MM-dd") == w.CreatedDate.Value.ToString("yyyy-MM-dd")).ToList();
+                    }
 
                     lstResults.ListGiftGroupOutput =
                         lstGG.Skip((pageNo - 1) * pageSize).Take(pageSize)

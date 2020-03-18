@@ -19,8 +19,8 @@ namespace Api.ManagerGift.Services
             dateSearch = string.IsNullOrWhiteSpace(dateSearch) ? "" : dateSearch;
             SessionManager.DoWork(ss =>
             {
-                //try
-                //{
+                try
+                {
                     var lstUser = ss.Query<User>().ToList();
                     var lstOG = ss.QueryOver<OptionGift>()
                         .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere)
@@ -32,9 +32,8 @@ namespace Api.ManagerGift.Services
                     }
                     if (dateSearch != "")
                     {
-                    //DateTime oDate = DateTime.ParseExact(dateSearch, "yyyy-MM-dd", null);
                         DateTime oDate = Convert.ToDateTime(dateSearch);
-                        lstOG =lstOG.Where(w => oDate.ToString("yyyy-MM-dd") == w.CreatedDate.Value.ToString("yyyy-MM-dd")).ToList();
+                        lstOG = lstOG.Where(w => oDate.ToString("yyyy-MM-dd") == w.CreatedDate.Value.ToString("yyyy-MM-dd")).ToList();
                     }
 
                     lstResults.ListOptionGiftOutput =
@@ -52,11 +51,11 @@ namespace Api.ManagerGift.Services
                         }).ToList();
                     var total = lstOG.Count();
                     lstResults.TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;
-                //}
-                //catch (Exception ex)
-                //{
-                //    Console.WriteLine(ex.Message);
-                //}
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             });
             return lstResults;
         }

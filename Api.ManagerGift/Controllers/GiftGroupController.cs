@@ -14,10 +14,10 @@ namespace Api.ManagerGift.Controllers
     {
         GiftGroupService _giftGroupService = new GiftGroupService();
 
-        [HttpGet("{pageNo}/{pageSize}/{textSearch}")]
-        public IActionResult Get(int pageNo, int pageSize, string textSearch)
+        [HttpGet("{pageNo}/{pageSize}/{textSearch}/{sltPermisionId}/{dateSearch}")]
+        public IActionResult Get(int pageNo, int pageSize, string textSearch, int sltPermisionId, string dateSearch)
         {
-            return Ok(_giftGroupService.Get(pageNo, pageSize, textSearch));
+            return Ok(_giftGroupService.Get(pageNo, pageSize, textSearch, sltPermisionId, dateSearch));
         }
 
         [HttpGet]
