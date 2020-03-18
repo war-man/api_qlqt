@@ -418,12 +418,14 @@ namespace Api.ManagerGift.Services
                                         p.MaxGiftInDay,
                                         p.MaxGiftWithCustomer,
                                         p.IsChange,
-                                        StartDate = ContextProvider.GetConvertDatetime(p.StartDate),
-                                        FinishDate = ContextProvider.GetConvertDatetime(p.FinishDate),
+                                        //StartDate = ContextProvider.GetConvertDatetime(p.StartDate),
+                                        //FinishDate = ContextProvider.GetConvertDatetime(p.FinishDate),
+                                        StartDate = p.StartDate,
+                                        FinishDate = p.FinishDate,
                                         CreatedBy = ContextProvider.GetFullName(lstUser, p.CreatedBy),
-                                        CreatedDate = ContextProvider.GetConvertDatetime(p.CreatedDate),
+                                        CreatedDate = ContextProvider.GetConvertDatetimeDDMMYYYHHmm(p.CreatedDate),
                                         NguoiDuyet = ContextProvider.GetFullName(lstUser, p.NguoiDuyet),
-                                        NgayDuyet = ContextProvider.GetConvertDatetime(p.NgayDuyet)
+                                        NgayDuyet = ContextProvider.GetConvertDatetimeDDMMYYYHHmm(p.NgayDuyet)
                                     }).FirstOrDefault();
                     var giftPromotionId = promotion.GiftPromotionId;
                     var giftPromotions = ss.Query<GiftPromotion>()

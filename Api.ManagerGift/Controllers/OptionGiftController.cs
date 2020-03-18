@@ -17,10 +17,10 @@ namespace Api.ManagerGift.Controllers
     {
         OptionGiftService _optionGiftService = new OptionGiftService();
 
-        [HttpGet("{pageNo}/{pageSize}/{textSearch}")]
-        public IActionResult Get(int pageNo, int pageSize, string textSearch)
+        [HttpGet("{pageNo}/{pageSize}/{textSearch}/{sltPermisionId}/{dateSearch}")]
+        public IActionResult Get(int pageNo, int pageSize, string textSearch, int sltPermisionId, string dateSearch)
         {
-            return Ok(_optionGiftService.Get(pageNo, pageSize, textSearch));
+            return Ok(_optionGiftService.Get(pageNo, pageSize, textSearch, sltPermisionId, dateSearch));
         }
 
         [HttpGet]

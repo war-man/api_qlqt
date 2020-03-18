@@ -12,18 +12,30 @@ namespace Api.ManagerGift.Services
 {
     public class OptionGiftService
     {
-        public dynamic Get(int pageNo, int pageSize, string textSearch)
+        public dynamic Get(int pageNo, int pageSize, string textSearch, int sltPermisionId, string dateSearch)
         {
             dynamic lstResults = new ExpandoObject();
             textSearch = string.IsNullOrWhiteSpace(textSearch) ? "" : textSearch;
+            dateSearch = string.IsNullOrWhiteSpace(dateSearch) ? "" : dateSearch;
             SessionManager.DoWork(ss =>
             {
-                try
-                {
+                //try
+                //{
                     var lstUser = ss.Query<User>().ToList();
                     var lstOG = ss.QueryOver<OptionGift>()
                         .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere)
                             || p.Code.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.CreatedDate).Desc.List();
+                    if (sltPermisionId != 0)
+                    {
+                        var userForPermision = lstUser.Where(w => w.PermisionId == sltPermisionId).Select(w => w.Id).ToList();
+                        lstOG = lstOG.Where(w => userForPermision.Contains(w.CreatedBy.Value)).ToList();
+                    }
+                    if (dateSearch != "")
+                    {
+                    //DateTime oDate = DateTime.ParseExact(dateSearch, "yyyy-MM-dd", null);
+                        DateTime oDate = Convert.ToDateTime(dateSearch);
+                        lstOG =lstOG.Where(w => oDate.ToString("yyyy-MM-dd") == w.CreatedDate.Value.ToString("yyyy-MM-dd")).ToList();
+                    }
 
                     lstResults.ListOptionGiftOutput =
                         lstOG.Skip((pageNo - 1) * pageSize).Take(pageSize)
@@ -40,11 +52,11 @@ namespace Api.ManagerGift.Services
                         }).ToList();
                     var total = lstOG.Count();
                     lstResults.TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
+                //}
+                //catch (Exception ex)
+                //{
+                //    Console.WriteLine(ex.Message);
+                //}
             });
             return lstResults;
         }

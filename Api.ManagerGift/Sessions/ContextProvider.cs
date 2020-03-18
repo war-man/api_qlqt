@@ -57,6 +57,15 @@ namespace Api.ManagerGift.Sessions
             }
             return "";
         }
+        public static string GetConvertDatetimeDDMMYYYHHmm(DateTime? date)
+        {
+            if (date != null)
+            {
+                var d = date.GetValueOrDefault(DateTime.Now);
+                return d.ToString("dd-MM-yyyy HH:mm");
+            }
+            return "";
+        }
         public static UserDTO GetUserInfo(ClaimsPrincipal principal)
         {
             var result = new UserDTO();
