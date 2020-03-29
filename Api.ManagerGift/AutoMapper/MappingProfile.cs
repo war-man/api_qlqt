@@ -12,6 +12,7 @@ namespace Api.ManagerGift.AutoMapper
             CreateMap<UserDTO, User>();
 
             CreateMap<Organization, OrganizationDTO>();
+            CreateMap<Organization, OrganizationDetailDTO>();
             CreateMap<Organization, NewOrganizationDTO>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.Code, opt => opt.MapFrom(src => src.Code))

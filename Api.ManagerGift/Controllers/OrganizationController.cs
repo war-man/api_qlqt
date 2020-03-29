@@ -58,5 +58,10 @@ namespace Api.ManagerGift.Controllers
         {
             return Ok(_organizationService.GetAll());
         }
+        [HttpGet("GetInfoDetail")]
+        public IActionResult GetInfoDetail()
+        {
+            return Ok(_organizationService.GetInfoDetail());
+        }
     }
 }

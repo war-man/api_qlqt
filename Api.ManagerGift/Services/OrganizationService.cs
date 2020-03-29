@@ -279,5 +279,48 @@ namespace Api.ManagerGift.Services
             }
             return lstResults;
         }
+
+        public List<OrganizationDetailDTO> GetInfoDetail()
+        {
+            var lstResults = new List<OrganizationDetailDTO>();
+            try
+            {
+                SessionManager.DoWork(ss => {
+                    var lstOrganizations = ss.Query<Organization>().OrderBy(w => w.Name).ToList();
+
+                    foreach (var item in lstOrganizations)
+                    {
+                        var parent = lstOrganizations.Where(w => w.Id == item.ParentId).FirstOrDefault();
+
+                        var obj = Mapper.Map<OrganizationDetailDTO>(item);
+                        obj.ParentName = parent != null ? parent.Name : "";
+                        obj.RegionName = GetVungMien(item.Region);
+
+                        if (item.ManageCode == "PGD")
+                        {
+                            obj.RegionName = GetVungMien(parent.Region);
+                        }
+                        lstResults.Add(obj);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return lstResults;
+        }
+        public string GetVungMien(string code)
+        {
+            string regionName = "";
+            if (code == "BAC")
+                regionName = "Miền Bắc";
+            else if (code == "TRUNG")
+                regionName = "Miền Trung";
+            else if (code == "NAM")
+                regionName = "Miền Nam";
+
+            return regionName;
+        }
     }
 }
