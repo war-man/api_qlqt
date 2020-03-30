@@ -29,6 +29,7 @@ namespace Api.ManagerGift.Services
                     var tranfers = ss.Query<TransferGift>().Where(p => p.FlagDieuChuyen != new Guid(Constants.GUIDE_TYPE_NULL)).
                     Select(s => new
                     {
+                        s.Id,
                         s.FlagDieuChuyen,
                         s.CreatedBy,
                         s.PromotionId,
@@ -38,7 +39,15 @@ namespace Api.ManagerGift.Services
                         s.CreatedDate
                     }).Distinct().ToList();
                     // .OrderBy(s => new { s.CreatedDate, s.Status })
-
+                    List<Guid> tranfersIds = tranfers.Select(s => s.Id).ToList();
+                    var detailTranfer = ss.Query<TransferDetail>().Where(p => tranfersIds.Contains(p.TransferGift.Id))
+                    .Select(s => new
+                    {
+                        TransferId = s.TransferGift.Id,
+                        s.FlagDieuChuyen,
+                        s.GiftId,
+                        s.Amount
+                    }).Distinct().ToList();
                     if (organizationId != null)
                         tranfers = tranfers.Where(s => s.DepartmentId == new Guid(organizationId)).ToList();
 
@@ -63,6 +72,7 @@ namespace Api.ManagerGift.Services
                                            CreatedDate = ContextProvider.GetConvertDatetime(_tranfers.CreatedDate),
                                            MaCTKM = _promotion.Code,
                                            TenCTKM = _promotion.Name,
+                                           SoLanPBo = detailTranfer.Where(w=>w.TransferId==_tranfers.Id).Count(),
                                            DonViThucHien = ContextProvider.GetOrganizationName(lstOrgan, _tranfers.DepartmentId),
                                        }).OrderBy(s => s.Status).OrderBy(s=>s.CreatedDate);
                     result.LstPhanBo = lstTranfers.Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
@@ -221,6 +231,7 @@ namespace Api.ManagerGift.Services
                     var detailTranfer = ss.Query<TransferDetail>().Where(p => p.FlagDieuChuyen == flagDieuChuyen)
                     .Select(s => new
                     {
+                        TransferId =s.TransferGift.Id,
                         s.FlagDieuChuyen,
                         s.GiftId,
                         s.Amount
@@ -229,6 +240,7 @@ namespace Api.ManagerGift.Services
                     var tranfer = ss.Query<TransferGift>().Where(p => p.FlagDieuChuyen == flagDieuChuyen)
                         .Select(s => new
                         {
+                            s.Id,
                             s.FlagDieuChuyen,
                             s.PromotionId,
                             s.Status,
@@ -269,6 +281,7 @@ namespace Api.ManagerGift.Services
                                    NguoiDuyet = ContextProvider.GetFullName(lstUser, _tranfer.NguoiDuyet),
                                    NgayDuyet = ContextProvider.GetConvertDatetime(_tranfer.NgayDuyet),
                                    CreatedDate = ContextProvider.GetConvertDatetime(_tranfer.CreatedDate),
+                                   NumberOdEdit = detailTranfer.Where(w=>w.TransferId == _tranfer.Id).Count(),
                                    MaCTKM = _promotion.Code,
                                    TenCTKM = _promotion.Name,
                                    DonViThucHien = ContextProvider.GetOrganizationName(lstOrgan, _tranfer.DepartmentId),
