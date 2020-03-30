@@ -88,7 +88,7 @@ namespace Api.ManagerGift.Services
                                            _tranfers.StageCurrent,
                                            _tranfers.CreatedBy,
                                            CreatedDate = ContextProvider.GetConvertDatetime(_tranfers.CreatedDate),
-                                       }).OrderBy(v => v.Status).OrderBy(v=>v.CreatedDate);
+                                       }).OrderBy(v => v.Status).OrderByDescending(v=>v.CreatedDate);
 
 
                     lstResults.ListTranfers = lstTranfers.Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
