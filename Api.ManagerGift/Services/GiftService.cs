@@ -23,7 +23,7 @@ namespace Api.ManagerGift.Services
                 {
                     var lstUser = ss.Query<User>().ToList();
                     var lstGift = ss.QueryOver<Gift>()
-                        .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.Name).Asc.List();
+                        .Where(p => p.Name.IsLike(textSearch, MatchMode.Anywhere)).OrderBy(p => p.CreatedDate).Desc.List();
                     if (!string.IsNullOrEmpty(typeGift) && lstGift.Count > 0)
                         lstGift = lstGift.Where(p => p.GiftGroup.OptionGift.Name == typeGift).ToList();
                     if (!string.IsNullOrEmpty(groupGift) && lstGift.Count > 0)
