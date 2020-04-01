@@ -269,7 +269,20 @@ namespace Api.ManagerGift.Services
                         listPromotions = listPromotions.Where(p => p.Status == int.Parse(status)).ToList();
                     if (year != 0)
                         listPromotions = listPromotions.Where(p => p.CreatedDate.Value.Year == year).ToList();
-
+                    var PromotionIds = listPromotions.Select(s=>s.Id).Distinct().ToList();
+                    Guid defaultId = Guid.NewGuid();
+                    var tranfers = ss.Query<TransferGift>().Where(p => PromotionIds.Contains(p.PromotionId??defaultId)).
+                    Select(s => new
+                    {
+                        s.Id,
+                        s.FlagDieuChuyen,
+                        s.CreatedBy,
+                        s.PromotionId,
+                        ProductId = s.Product.Id,
+                        s.Status,
+                        s.DepartmentId,
+                        s.CreatedDate
+                    }).Distinct().ToList();
                     lstResults.ListPromotions =
                         listPromotions.Skip((pageNo - 1) * pageSize).Take(pageSize)
                         .Select(p => new
@@ -289,7 +302,9 @@ namespace Api.ManagerGift.Services
                             CreatedBy = ContextProvider.GetFullName(lstUser, p.CreatedBy),
                             CreatedDate = ContextProvider.GetConvertDatetime(p.CreatedDate),
                             NguoiDuyet = ContextProvider.GetFullName(lstUser, p.NguoiDuyet),
-                            NgayDuyet = ContextProvider.GetConvertDatetime(p.NgayDuyet)
+                            NgayDuyet = ContextProvider.GetConvertDatetime(p.NgayDuyet),
+                            Tranfers = tranfers.Where(w=>w.PromotionId==p.Id && w.CreatedBy==p.CreatedBy)
+                                            .OrderByDescending(o=>o.CreatedDate)
                         }).ToList();
                     var total = listPromotions.Count();
                     lstResults.TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;

@@ -16,6 +16,7 @@ namespace Api.ManagerGift.Entities
         public virtual bool Status { get; set; }
         public virtual int MonthId { get; set; }
         public virtual int PermisionId { get; set; }
+        public virtual bool IsUser { get; set; }
 
         public virtual string Password
         {

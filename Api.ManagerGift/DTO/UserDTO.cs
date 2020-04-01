@@ -17,6 +17,7 @@ namespace Api.ManagerGift.DTO
         public string PositionId { get; set; }
         public Guid OrganizationId { get; set; }
         public int PermisionId { get; set; }
+        public bool IsUser { get; set; }
 
     }
 }

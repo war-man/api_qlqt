@@ -18,6 +18,7 @@ namespace Api.ManagerGift.Maps
             Map(p => p.Status);
             Map(p => p.MonthId);
             Map(p => p.PermisionId);
+            Map(p => p.IsUser);
         }
     }
 }

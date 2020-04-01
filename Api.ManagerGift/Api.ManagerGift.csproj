@@ -28,6 +28,8 @@
 
   <ItemGroup>
     <Folder Include="DownloadWordExcel\" />
+    <Folder Include="DownloadWordExcel\" />
+    <Folder Include="wwwroot\" />
     <Folder Include="wwwroot\" />
     <Folder Include="wwwroot\" />
     <Folder Include="wwwroot\" />

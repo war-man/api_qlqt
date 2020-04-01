@@ -123,13 +123,67 @@ namespace Api.ManagerGift.Services
                 try
                 {
                     var obj = ss.Get<User>(id);
-                    ss.Delete(obj);
-                    result = "Đã xóa";
+                    if (!obj.IsUser)
+                    {
+                        ss.Delete(obj);
+                        result = "Đã xóa";
+                    }
+                    else
+                    {
+                        if(IsUser(obj.Id))
+                        {
+                            obj.IsUser = true;
+                            result = "Bạn không thể xóa. Vì user này đã có thao tác trên hệ thống.";
+                        }
+                        else
+                        {
+                            ss.Delete(obj);
+                            result = "Đã xóa";
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
                     result = ex.Message;
+                }
+            });
+            return result;
+        }
+        /// <summary>
+        /// Check user đó đã có thao tác trên hệ thống chưa?
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        public bool IsUser(Guid id)
+        {
+            var result = false;
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    if (ss.Query<Gift>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                        result = true;
+                    else if (ss.Query<GiftGroup>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                        result = true;
+                    else if (ss.Query<OptionGift>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                        result = true;
+                    else if (ss.Query<OptionGift>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                        result = true;
+                    else if (ss.Query<Promotion>().SingleOrDefault(p => p.CreatedBy == id || p.NguoiDuyet == id) != null)
+                        result = true;
+                    else if (ss.Query<TransferGift>().SingleOrDefault(p => p.CreatedBy == id || p.NguoiDuyet == id) != null)
+                        result = true;
+                    else if (ss.Query<TransferUserLog>().SingleOrDefault(p => p.UserTransfer == id) != null)
+                        result = true;
+                    else if (ss.Query<Unit>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                        result = true;
+                    else
+                        result = false;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
             });
             return result;
@@ -192,19 +246,21 @@ namespace Api.ManagerGift.Services
             return result;
         }
 
-        public List<dynamic> GetAllUseOfOrg( Guid organizationId)
+        public List<dynamic> GetAllUseOfOrg(Guid organizationId)
         {
             var _organizationService = new OrganizationService();
             var lstResult = new List<dynamic>();
             try
             {
-                SessionManager.DoWork(ss => {
+                SessionManager.DoWork(ss =>
+                {
                     var lstOrgs = ss.Query<Organization>().ToList();
                     var lstIds = new List<Guid>();
                     _organizationService.RecursionGetLstIds(lstOrgs, lstIds, organizationId);
                     lstResult = ss.Query<User>()
                         .Where(p => lstIds.Contains(p.Organization.Id))
-                        .Select(p => (dynamic)new {
+                        .Select(p => (dynamic)new
+                        {
                             p.UserName,
                             p.FullName,
                             p.Email,
@@ -228,13 +284,14 @@ namespace Api.ManagerGift.Services
             var result = false;
             try
             {
-                SessionManager.DoWork(ss => {
+                SessionManager.DoWork(ss =>
+                {
                     var use = ss.Query<User>().Single(p => p.UserName == username);
                     use.Status = status;
                     ss.Update(use);
                 });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
 
             }

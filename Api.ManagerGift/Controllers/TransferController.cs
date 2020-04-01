@@ -115,5 +115,11 @@ namespace Api.ManagerGift.Controllers
         [HttpGet("TranferHistory/{idTranfer}")]
         public IActionResult TranferHistory(string idTranfer) 
             => Ok(_transferService.TranferHistory(idTranfer));
+
+        #region Nguyen
+        [HttpGet("TranferHistory/{promotionId}")]
+        public IActionResult TranferPromotion(string promotionId)
+            => Ok(_transferService.TranferPromotion(promotionId));
+        #endregion
     }
 }

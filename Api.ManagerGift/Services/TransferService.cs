@@ -88,11 +88,7 @@ namespace Api.ManagerGift.Services
                                            _tranfers.StageCurrent,
                                            _tranfers.CreatedBy,
                                            CreatedDate = ContextProvider.GetConvertDatetime(_tranfers.CreatedDate),
-<<<<<<< HEAD
-                                       }).OrderBy(v => v.Status).OrderBy(v => v.CreatedDate);
-=======
                                        }).OrderBy(v => v.Status).OrderByDescending(v=>v.CreatedDate);
->>>>>>> 23e7f47cc0b4f78936bbd81867e47b93d3abda3e
 
 
                     lstResults.ListTranfers = lstTranfers.Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
@@ -1463,6 +1459,26 @@ namespace Api.ManagerGift.Services
             {
                 result = ex.Message;
                 Console.WriteLine(result);
+            }
+            return result;
+        }
+
+        public dynamic TranferPromotion(string _promotionId)
+        {
+            dynamic result = new ExpandoObject();
+
+            try
+            {
+                var promotionId = new Guid(_promotionId);
+                SessionManager.DoWork(ss =>
+                {
+                    var Tranfers = ss.Query<TransferGift>().Where(s => s.PromotionId == promotionId).ToList();
+                    result = Tranfers;
+                });
+            }
+            catch (Exception ex)
+            {
+                result = ex;
             }
             return result;
         }

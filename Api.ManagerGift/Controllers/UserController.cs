@@ -61,7 +61,7 @@ namespace Api.ManagerGift.Controllers
             return Ok(_userService.GetAllUseOfOrg(organizationId));
         }
 
-        [HttpPut("BlockAndActive/{username}")]
+        [HttpPut("BlockAndActive/{username}/{status}")]
         public IActionResult BlockAndActive(string username, bool status)
         {
             return Ok(_userService.SetStatus(username, status));
