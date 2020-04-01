@@ -88,7 +88,7 @@ namespace Api.ManagerGift.Services
                                            _tranfers.StageCurrent,
                                            _tranfers.CreatedBy,
                                            CreatedDate = ContextProvider.GetConvertDatetime(_tranfers.CreatedDate),
-                                       }).OrderBy(v => v.Status).OrderBy(v=>v.CreatedDate);
+                                       }).OrderBy(v => v.Status).OrderBy(v => v.CreatedDate);
 
 
                     lstResults.ListTranfers = lstTranfers.Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
@@ -1177,6 +1177,13 @@ namespace Api.ManagerGift.Services
                                         ReceivingPromotion = null
                                     });
                                 }
+                                //Update trạng thái từ Từ chối thành Khởi tạo để CV chuyển tiếp lên LD
+                                if (newTransfer.Status == 3)
+                                {
+                                    newTransfer.Status = 0;
+                                    ss.Update(newTransfer);
+                                }
+                                //Chỉnh sửa 31/03/2020
                                 break;
 
                             case Constants.PARAM_XUAT_KHO:
@@ -1213,6 +1220,13 @@ namespace Api.ManagerGift.Services
                                             ReceivingDepartment = userinfo.Organization.Id,
                                             ReceivingPromotion = new Guid(itm.PromotionId)
                                         });
+                                        //Update trạng thái từ Từ chối thành Khởi tạo để CV chuyển tiếp lên LD
+                                        if (newTransfer1.Status == 3)
+                                        {
+                                            newTransfer1.Status = 0;
+                                            ss.Update(newTransfer1);
+                                        }
+                                        //Chỉnh sửa 31/03/2020
                                     }
                                 }
                                 break;
@@ -1300,7 +1314,13 @@ namespace Api.ManagerGift.Services
                                 var newTransfer = ss.Query<TransferGift>().SingleOrDefault(p => p.Id == _id);
                                 ss.CreateSQLQuery($"delete [TransferGiftLog] where TransferGiftId = '{_id}'").UniqueResult();
                                 ss.CreateSQLQuery($"delete [TransferDetail] where TransferId = '{_id}'").UniqueResult();
-
+                                //Update trạng thái từ Từ chối thành Khởi tạo để CV chuyển tiếp lên LD
+                                if (newTransfer.Status == 3)
+                                {
+                                    newTransfer.Status = 0;
+                                    ss.Update(newTransfer);
+                                }
+                                //Chỉnh sửa 31/03/2020
                                 var newTransferLog = new TransferGiftLog
                                 {
                                     Id = Guid.NewGuid(),
@@ -1394,6 +1414,12 @@ namespace Api.ManagerGift.Services
                             ss.CreateSQLQuery($"delete [TransferGiftLog] where TransferGiftId = '{_id}'").UniqueResult();
                             ss.CreateSQLQuery($"delete [TransferDetail] where TransferId = '{_id}'").UniqueResult();
                             transfer.PromotionId = new Guid(fromPromotionId);
+                            //Update trạng thái từ Từ chối thành Khởi tạo để CV chuyển tiếp lên LD
+                            if (transfer.Status == 3)
+                            {
+                                transfer.Status = 0;
+                            }
+                            //Chỉnh sửa 31/03/2020
                             ss.SaveOrUpdate(transfer);
                             var newTransferLog = new TransferGiftLog
                             {
@@ -1426,7 +1452,7 @@ namespace Api.ManagerGift.Services
                     }
                     else
                         result = Constants.CHUC_NANG_NHAN_VIEN;
-                    
+
                 });
             }
             catch (Exception ex)
