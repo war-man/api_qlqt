@@ -36,7 +36,9 @@ namespace Api.ManagerGift.Services
                         ProductId = s.Product.Id,
                         s.Status,
                         s.DepartmentId,
-                        s.CreatedDate
+                        s.CreatedDate,
+                        s.NguoiDuyet,
+                        s.NgayDuyet
                     }).Distinct().ToList();
                     // .OrderBy(s => new { s.CreatedDate, s.Status })
                     List<Guid> tranfersIds = tranfers.Select(s => s.Id).ToList();
@@ -65,6 +67,7 @@ namespace Api.ManagerGift.Services
                                        where _tranfers.Status != status
                                        select new
                                        {
+                                           Id = _tranfers.Id,
                                            _tranfers.ProductId,
                                            _tranfers.Status,
                                            _tranfers.FlagDieuChuyen,
@@ -74,6 +77,8 @@ namespace Api.ManagerGift.Services
                                            TenCTKM = _promotion.Name,
                                            SoLanPBo = detailTranfer.Where(w=>w.TransferId==_tranfers.Id).Count(),
                                            DonViThucHien = ContextProvider.GetOrganizationName(lstOrgan, _tranfers.DepartmentId),
+                                           NguoiDuyet = _tranfers.NguoiDuyet != null ? ContextProvider.GetFullName(lstUser, _tranfers.NguoiDuyet) : "",
+                                           NgayDuyet = ContextProvider.GetConvertDatetime(_tranfers.NgayDuyet),
                                        }).OrderBy(s => s.Status).OrderBy(s=>s.CreatedDate);
                     result.LstPhanBo = lstTranfers.Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
 
