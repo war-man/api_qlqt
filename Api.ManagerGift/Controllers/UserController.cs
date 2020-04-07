@@ -77,5 +77,10 @@ namespace Api.ManagerGift.Controllers
         {
             return Ok(_userService.GetUserFromId(id));
         }
+        [HttpPost("UpdateUser")]
+        public IActionResult UpdateUser([FromBody] UserDTO obj)
+        {
+            return Ok(_userService.UpdateUser(obj));
+        }
     }
 }

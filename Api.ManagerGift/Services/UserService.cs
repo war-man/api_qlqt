@@ -145,6 +145,11 @@ namespace Api.ManagerGift.Services
                         else
                         {
                             ss.Delete(obj);
+                            //Xóa tất cả các log pass theo user này
+                            var userPassLog = ss.Query<UserLogPassword>().Where(w => w.UserId == id).ToList();
+                            userPassLog.ForEach(itm => {
+                                ss.Delete(itm);
+                            });
                             result = "Đã xóa";
                         }
                     }
@@ -223,9 +228,9 @@ namespace Api.ManagerGift.Services
                 try
                 {
                     var user = ss.Query<User>().Single(p => p.UserName == username);
-                    user.Password = "123456";
+                    user.Password = "Abcd@1234";
                     ss.Update(user);
-                    result = "Refresh password success";
+                    result = "Refresh password success: Abcd@1234";
                 }
                 catch (Exception ex)
                 {
@@ -322,6 +327,7 @@ namespace Api.ManagerGift.Services
                             p.UserName,
                             PositionCode = p.Position.Code,
                             PositionName = p.Position.Name,
+                            OrganizationId = p.Organization.Id,
                             OrganizationCode = p.Organization.Code,
                             OrganizationName = p.Organization.Name,
                             p.Email,
@@ -337,6 +343,39 @@ namespace Api.ManagerGift.Services
                 }
             });
 
+            return result;
+        }
+
+        public string UpdateUser(UserDTO obj)
+        {
+            var result = string.Empty;
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    var user = ss.Query<User>().SingleOrDefault(p => p.Id == obj.Id);
+                    if (user != null)
+                    {
+                        var position = ss.Get<Position>((obj.PositionCode == "Staff" ? Guid.Parse("0179CD27-F7AC-4042-8685-6D3B694A6954") : Guid.Parse("803424CE-EA9C-4503-8B28-AAC000910ADB")));
+                        var organization = ss.Query<Organization>().Single(p => p.Id == obj.OrganizationId);
+                        user.Position = position;
+                        user.Organization = organization;
+                        user.FullName = obj.FullName;
+                        user.Status = obj.Status;
+                        ss.Update(user);
+                        result = "Cập nhật thành công";
+                    }
+                    else
+                    {
+                        result = $"{obj.UserName} không tồn tại!\nAnh/Chị vui lòng kiểm tra lại.";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    result = ex.Message;
+                }
+            });
             return result;
         }
     }
