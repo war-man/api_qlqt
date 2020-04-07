@@ -75,6 +75,57 @@ namespace Api.ManagerGift.Controllers
             }
         }
 
+        /// <summary>
+        /// Báo cáo tồn kho quà tặng
+        /// </summary>
+        /// <param name="productId"></param>
+        /// <param name="idPromotion"></param>
+        /// <param name="toDate"></param>
+        /// <returns></returns>
+        [HttpGet("ReportInventory/{productId}/{idPromotion}/{toDate}")]
+        public string ReportInventory(string productId, string idPromotion, string toDate)
+        {
+            var folder = "/DownloadWordExcel/";
+            try
+            {
+                System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+                var contentRootPathTemp = _hostingEnvironment.ContentRootPath + "\\TempExport\\";
+                var contentRootPathExport = _hostingEnvironment.ContentRootPath + "\\DownloadWordExcel\\";
+
+                var nameReport = "Bao Cao Ton Kho";
+                var nameTitle = string.Empty;
+                var nameExport = string.Empty;
+
+                switch (productId.ToUpper())
+                {
+                    case "BC_06":
+                        nameTitle = "BÁO CÁO QUÀ TẶNG TỒN KHO";
+                        nameExport = "Báo cáo tồn kho";
+                        break;
+                    default:
+                        break;
+                }
+                var workbook = new Workbook(contentRootPathTemp + nameReport + ".xlsx");
+                var data = _reportService.GetDataReportInventory(HttpContext.User,productId, idPromotion, toDate);
+                string[] title = new string[] { nameTitle, " ngày " + toDate };
+
+                DataTable outData;
+                ConvertToDataTableStore(data, out outData);
+                var worksheet = workbook.Worksheets[0];
+                worksheet.Cells.ImportArray(title, 0, 0, true);
+                worksheet.Cells.ImportDataTable(outData, false, "A5");
+                
+                var fileName = DateTime.Now.ToString("yyyyMMdd_hhmmss_") + nameExport;
+                workbook.Save(contentRootPathExport + fileName + ".xlsx", SaveFormat.Xlsx);
+                return folder + fileName + ".xlsx";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return folder + "Error.xlsx";
+            }
+        }
+
         [HttpGet]
         public IActionResult GetTonKho() => Ok(_reportService.TonKho(HttpContext.User));
 
@@ -120,6 +171,40 @@ namespace Api.ManagerGift.Controllers
             newRow["TranferDepartment"] = p.TranferDepartment;
             newRow["ReceivingDepartment"] = p.ReceivingDepartment;
             newRow["Note"] = "";
+
+            tbl.Rows.Add(newRow);
+        }
+
+        private static void ConvertToDataTableStore(IEnumerable<StoreDTO> dataInput, out DataTable data)
+        {
+            var tbl = new DataTable();
+            tbl.Columns.Add(new DataColumn("STT", typeof(string)));
+            tbl.Columns.Add(new DataColumn("DepartmentName", typeof(string)));
+            tbl.Columns.Add(new DataColumn("PromotionName", typeof(string)));
+            tbl.Columns.Add(new DataColumn("GiftName", typeof(string)));
+            tbl.Columns.Add(new DataColumn("Amount", typeof(string)));
+            tbl.Columns.Add(new DataColumn("UpdatedDate", typeof(string)));
+
+            var idx = 0;
+
+            foreach (var hs in dataInput)
+            {
+                idx++;
+                AddToDataTableStore(tbl, hs, idx);
+            }
+
+            data = tbl;
+        }
+        private static void AddToDataTableStore(DataTable tbl, StoreDTO p, int idx)
+        {
+            var newRow = tbl.NewRow();
+
+            newRow["STT"] = idx;
+            newRow["DepartmentName"] = p.DepartmentName;
+            newRow["PromotionName"] = p.PromotionName;
+            newRow["GiftName"] = p.GiftName;
+            newRow["Amount"] = p.Amount;
+            newRow["UpdatedDate"] = p.UpdatedDate.ToString("dd-MM-yyyy hh:mm:ss");
 
             tbl.Rows.Add(newRow);
         }

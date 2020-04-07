@@ -4,6 +4,7 @@ using Api.ManagerGift.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 
@@ -65,6 +66,54 @@ namespace Api.ManagerGift.Services
             return result;
         }
 
+
+        public List<StoreDTO> GetDataReportInventory(ClaimsPrincipal principal,string productId, string idPromotion, string toDate)
+        {
+            var result = new List<StoreDTO>();
+            var userinfo = ContextProvider.GetUserInfo(principal);
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    var _toDate = DateTime.ParseExact(toDate.Replace("-","/") + " 23:59:59,000", "dd/MM/yyyy HH:mm:ss,fff",
+                                       System.Globalization.CultureInfo.InvariantCulture);
+                    var lstOrgan = ss.Query<Organization>().ToList();
+                    var lstPromotion = ss.Query<Promotion>().ToList();
+                    var lstGift = ss.Query<Gift>().ToList();
+                    var list = ss.Query<Store>().Where(s => s.UpdatedDate <= _toDate)
+                        .Select(p => new
+                        {
+                            p.DepartmentId,
+                            DepartmentName = ContextProvider.GetOrganizationName(lstOrgan, p.DepartmentId),
+                            p.PromotionId,
+                            PromotionName = ContextProvider.GetPromotionName(lstPromotion, p.PromotionId),
+                            p.GiftId,
+                            GiftName = ContextProvider.GiftName(lstGift, p.GiftId),
+                            p.Amount,
+                            p.UpdatedDate
+                        }).ToList();
+                    if (!string.IsNullOrEmpty(idPromotion))
+                        list = list.Where(w => w.PromotionId == Guid.Parse(idPromotion)).ToList();
+                    list.ForEach(item=> {
+                        var itemSave = new StoreDTO();
+                        itemSave.DepartmentId = item.DepartmentId;
+                        itemSave.DepartmentName = item.DepartmentName;
+                        itemSave.PromotionId = item.PromotionId;
+                        itemSave.PromotionName = item.PromotionName;
+                        itemSave.GiftId = item.GiftId;
+                        itemSave.GiftName = item.GiftName;
+                        itemSave.Amount = item.Amount;
+                        itemSave.UpdatedDate = item.UpdatedDate;
+                        result.Add(itemSave);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            });
+            return result;
+        }
         public dynamic TonKho(ClaimsPrincipal principal)
         {
             dynamic result = new ExpandoObject();

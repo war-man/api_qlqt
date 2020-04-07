@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Net.Http;
 
 namespace Api.ManagerGift.Controllers
 {
@@ -25,8 +26,9 @@ namespace Api.ManagerGift.Controllers
             dynamic result = new ExpandoObject();
             IActionResult response = Unauthorized();
             result = _accountService.Login(user.Email, user.Password);
-            if (((IDictionary<string, Object>)result).ContainsKey("JWT") 
+            if ((((IDictionary<string, Object>)result).ContainsKey("JWT")
                 && ((IDictionary<string, Object>)result).ContainsKey("FullName"))
+                    || ((IDictionary<string, Object>)result).ContainsKey("IsResetPass"))
             {
                 response = Ok(result);
             }
@@ -41,6 +43,19 @@ namespace Api.ManagerGift.Controllers
         public IActionResult ChangePassword(string password)
         {
             return Ok(_accountService.ChangePassword(HttpContext.User, password));
+        }
+
+        /// <summary>
+        /// Reset mat khau. Danh cho nguoi dung
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        [HttpPut("ResetPassword/{user}/{passwordOld}/{passwordNew}")]
+        public IActionResult ResetPassword(string user, string passwordOld, string passwordNew)
+        {
+            dynamic result = new ExpandoObject();
+            result = _accountService.ResetPassword(user, passwordOld, passwordNew);
+            return Ok(result);
         }
     }
 }

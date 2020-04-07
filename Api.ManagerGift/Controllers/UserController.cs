@@ -40,7 +40,12 @@ namespace Api.ManagerGift.Controllers
         [HttpGet("{username}")]
         public IActionResult Get(string username)
         {
-            return Ok(_userService.IsDuplicate(username));
+            return Ok(_userService.IsDuplicate(username, "username"));
+        }
+        [HttpGet("{email}")]
+        public IActionResult GetEmail(string email)
+        {
+            return Ok(_userService.IsDuplicate(email, "email"));
         }
 
         [HttpPut("{username}")]
@@ -65,6 +70,12 @@ namespace Api.ManagerGift.Controllers
         public IActionResult BlockAndActive(string username, bool status)
         {
             return Ok(_userService.SetStatus(username, status));
+        }
+
+        [HttpGet("GetUserFromId/{id}")]
+        public IActionResult GetUserFromId(Guid id)
+        {
+            return Ok(_userService.GetUserFromId(id));
         }
     }
 }
