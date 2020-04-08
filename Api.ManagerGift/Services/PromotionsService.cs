@@ -602,7 +602,7 @@ namespace Api.ManagerGift.Services
             {
                 try
                 {
-                    var promotion = ss.Query<Promotion>().SingleOrDefault(p => p.Code == obj.Code);
+                    var promotion = ss.Query<Promotion>().SingleOrDefault(p => p.Id == obj.Id);
                     if (promotion == null
                         || (promotion != null && flag == "Update"))
                     {
@@ -670,6 +670,23 @@ namespace Api.ManagerGift.Services
                 listGift.Add(giftPromotion);
             }
             return listGift;
+        }
+
+        public bool CheckMaCTKM(string codeCTKM)
+        {
+            var result = false;
+            try
+            {
+                SessionManager.DoWork(ss =>
+                {
+                    result = ss.Query<Promotion>().Any(p => p.Code.ToUpper() == codeCTKM.ToUpper());
+                });
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return result;
         }
         #endregion
 

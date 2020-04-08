@@ -76,6 +76,9 @@ namespace Api.ManagerGift.Controllers
         [HttpPost("UpdateCTKM/{flag}")]
         public IActionResult UpdateCTKM([FromBody] PromotionsDTO obj, string flag)
             => Ok(promotionsService.UpdatePromotion(obj, HttpContext.User, flag));
+
+        [HttpGet("CheckMaCTKM/{codeCTKM}")]
+        public IActionResult CheckMaCTKM(string codeCTKM) => Ok(promotionsService.CheckMaCTKM(codeCTKM));
         #endregion
     }
 }

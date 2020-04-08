@@ -230,13 +230,7 @@ namespace Api.ManagerGift.Services
                 //Lấy ra danh sách gần nhất
                 var userLogPass = ss.Query<UserLogPassword>().Where(p => p.UserId == userlogin.Id).ToList();
                 //Kiem tra pass moi co trung pass cu hay khong
-                userLogPass.ForEach(pas =>
-                {
-                    if (pas.Password == Entities.User.ChangeSha512(passNew))
-                    {
-                        IsPassDif = false;
-                    }
-                });
+                IsPassDif = userLogPass.Any(a => a.Password == Entities.User.ChangeSha512(passNew));
                 //Neu ko trung 
                 if (IsPassDif)
                 {
@@ -259,7 +253,7 @@ namespace Api.ManagerGift.Services
                     infoSuccess = "Thay đổi mật khẩu thành công. Vui lòng đăng nhập lại.!";
                     status = 1;
                 }
-                else if (!IsPassDif)
+                else
                 {
                     infoError = "Mật khẩu mới trùng với mật khẩu trước đây!";
                     status = 2;

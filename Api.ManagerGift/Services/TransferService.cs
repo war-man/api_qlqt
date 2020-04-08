@@ -91,7 +91,7 @@ namespace Api.ManagerGift.Services
                                        }).OrderBy(v => v.Status).OrderByDescending(v=>v.CreatedDate);
 
 
-                    lstResults.ListTranfers = lstTranfers.Skip((pageNo - 1) * pageSize).Take(pageSize).OrderByDescending(o=>o.CreatedDate).ToList();
+                    lstResults.ListTranfers = lstTranfers.OrderByDescending(o => o.CreatedDate).Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
 
                     var total = lstTranfers.Count();
                     lstResults.TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;

@@ -179,11 +179,14 @@ namespace Api.ManagerGift.Controllers
         {
             var tbl = new DataTable();
             tbl.Columns.Add(new DataColumn("STT", typeof(string)));
-            tbl.Columns.Add(new DataColumn("DepartmentName", typeof(string)));
-            tbl.Columns.Add(new DataColumn("PromotionName", typeof(string)));
             tbl.Columns.Add(new DataColumn("GiftName", typeof(string)));
-            tbl.Columns.Add(new DataColumn("Amount", typeof(string)));
-            tbl.Columns.Add(new DataColumn("UpdatedDate", typeof(string)));
+            tbl.Columns.Add(new DataColumn("GiftCode", typeof(string)));
+            tbl.Columns.Add(new DataColumn("Price", typeof(string)));
+            tbl.Columns.Add(new DataColumn("AmountAttribution", typeof(string)));
+            tbl.Columns.Add(new DataColumn("AmountUse", typeof(string)));
+            tbl.Columns.Add(new DataColumn("AmountInventory", typeof(string)));
+            tbl.Columns.Add(new DataColumn("DepartmentName", typeof(string)));
+            tbl.Columns.Add(new DataColumn("Note", typeof(string)));
 
             var idx = 0;
 
@@ -200,11 +203,14 @@ namespace Api.ManagerGift.Controllers
             var newRow = tbl.NewRow();
 
             newRow["STT"] = idx;
-            newRow["DepartmentName"] = p.DepartmentName;
-            newRow["PromotionName"] = p.PromotionName;
             newRow["GiftName"] = p.GiftName;
-            newRow["Amount"] = p.Amount;
-            newRow["UpdatedDate"] = p.UpdatedDate.ToString("dd-MM-yyyy hh:mm:ss");
+            newRow["GiftCode"] = p.GiftCode;
+            newRow["Price"] = p.Price;
+            newRow["AmountAttribution"] = p.AmountAttribution;
+            newRow["AmountUse"] = p.AmountUse;
+            newRow["AmountInventory"] = p.AmountInventory;
+            newRow["DepartmentName"] = p.DepartmentName;
+            newRow["Note"] = p.Note;
 
             tbl.Rows.Add(newRow);
         }

@@ -92,6 +92,21 @@ namespace Api.ManagerGift.Sessions
             else
                 return "";
         }
+
+        public static string GiftCode(List<Gift> lstGift, Guid? Id)
+        {
+            if (Id != null)
+                return lstGift.SingleOrDefault(p => p.Id == Id)?.Code ?? "";
+            else
+                return "";
+        }
+        public static decimal GiftPrice(List<Gift> lstGift, Guid? Id)
+        {
+            if (Id != null)
+                return lstGift.SingleOrDefault(p => p.Id == Id)?.Price ?? 0;
+            else
+                return 0;
+        }
         #endregion
     }
 }

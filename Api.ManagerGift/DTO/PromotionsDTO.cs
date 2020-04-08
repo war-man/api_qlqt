@@ -5,6 +5,7 @@ namespace Api.ManagerGift.DTO
     public class PromotionsDTO
     {
         public string Code { get; set; }
+        public Guid Id { get; set; }
         public string Name { get; set; }
         public int Status { get; set; }
         public Guid CreatedBy { get; set; }
