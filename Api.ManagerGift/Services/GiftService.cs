@@ -28,6 +28,10 @@ namespace Api.ManagerGift.Services
                         lstGift = lstGift.Where(p => p.GiftGroup.OptionGift.Name == typeGift).ToList();
                     if (!string.IsNullOrEmpty(groupGift) && lstGift.Count > 0)
                         lstGift = lstGift.Where(p => p.GiftGroup.Name == groupGift).ToList();
+                    var giftIds = lstGift.Select(s => s.Id).Distinct().ToList();
+                    var giftPromotions = ss.Query<GiftPromotion>().Where(p => giftIds.Contains(p.GiftId)).ToList();
+                    var giftPromotionIds = giftPromotions.Select(s => s.GiftPromotionId).ToList();
+                    var promotions = ss.Query<Promotion>().Where(p => giftPromotionIds.Contains(p.GiftPromotionId)).ToList();
                     lstResults.ListGiftOutput =
                         lstGift.Skip((pageNo - 1) * pageSize).Take(pageSize)
                         .Select(p => new
@@ -45,6 +49,7 @@ namespace Api.ManagerGift.Services
                             UnitCode = p.Unit.Code,
                             UnitName = p.Unit.Name,
                             p.Price,
+                            IsEdit = !promotions.Any(a=> giftPromotions.Where(w=>w.GiftId==p.Id).Select(s=>s.GiftPromotionId).ToList().Contains(a.GiftPromotionId)),
                             CreatedBy = ContextProvider.GetFullName(lstUser, p.CreatedBy),
                             CreatedDate = ContextProvider.GetConvertDatetime(p.CreatedDate),
                             UpdatedBy = ContextProvider.GetFullName(lstUser, p.UpdatedBy),
@@ -216,6 +221,8 @@ namespace Api.ManagerGift.Services
                 {
                     var lstUser = ss.Query<User>().ToList();
                     var gift = ss.Get<Gift>(id);
+                    var giftPromotionIds = ss.Query<GiftPromotion>().Where(p => p.GiftId== id).Select(s => s.GiftPromotionId).ToList();
+                    var isEdit = !ss.Query<Promotion>().Any(p => giftPromotionIds.Contains(p.GiftPromotionId));
                     result.Id = gift.Id;
                     result.Code = gift.Code;
                     result.Name = gift.Name;
@@ -229,6 +236,7 @@ namespace Api.ManagerGift.Services
                     result.UnitId = gift.Unit.Id;
                     result.UnitCode = gift.Unit.Code;
                     result.UnitName = gift.Unit.Name;
+                    result.IsEdit = isEdit;
                     result.CreatedBy = ContextProvider.GetFullName(lstUser, gift.CreatedBy);
                     result.CreatedDate = gift.CreatedDate;
                     result.UpdatedDate = gift.UpdatedDate;

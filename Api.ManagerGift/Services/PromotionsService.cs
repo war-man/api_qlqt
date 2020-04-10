@@ -269,9 +269,9 @@ namespace Api.ManagerGift.Services
                         listPromotions = listPromotions.Where(p => p.Status == int.Parse(status)).ToList();
                     if (year != 0)
                         listPromotions = listPromotions.Where(p => p.CreatedDate.Value.Year == year).ToList();
-                    var PromotionIds = listPromotions.Select(s=>s.Id).Distinct().ToList();
+                    var PromotionIds = listPromotions.Select(s => s.Id).Distinct().ToList();
                     Guid defaultId = Guid.NewGuid();
-                    var tranfers = ss.Query<TransferGift>().Where(p => PromotionIds.Contains(p.PromotionId??defaultId)).
+                    var tranfers = ss.Query<TransferGift>().Where(p => PromotionIds.Contains(p.PromotionId ?? defaultId)).
                     Select(s => new
                     {
                         s.Id,
@@ -303,8 +303,8 @@ namespace Api.ManagerGift.Services
                             CreatedDate = ContextProvider.GetConvertDatetime(p.CreatedDate),
                             NguoiDuyet = ContextProvider.GetFullName(lstUser, p.NguoiDuyet),
                             NgayDuyet = ContextProvider.GetConvertDatetime(p.NgayDuyet),
-                            Tranfers = tranfers.Where(w=>w.PromotionId==p.Id && w.CreatedBy==p.CreatedBy)
-                                            .OrderByDescending(o=>o.CreatedDate)
+                            Tranfers = tranfers.Where(w => w.PromotionId == p.Id && w.CreatedBy == p.CreatedBy)
+                                            .OrderByDescending(o => o.CreatedDate)
                         }).ToList();
                     var total = listPromotions.Count();
                     lstResults.TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;
@@ -686,6 +686,35 @@ namespace Api.ManagerGift.Services
             {
 
             }
+            return result;
+        }
+
+        public string Delete(ClaimsPrincipal principal,Guid id)
+        {
+            var result = string.Empty;
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    var obj = ss.Get<Promotion>(id);
+                    if (obj != null && obj.CreatedBy == ContextProvider.GetUserInfo(principal).Id)
+                    {
+                        var logs = ss.Query<PromotionLog>().Where(w=>w.Promotion.Id== id).ToList();
+                        logs.ForEach(itm=> {
+                            ss.Delete(itm);
+                        });
+                        ss.Delete(obj);
+                        result = "Đã xóa";
+                    }
+                    else
+                        result = "Bạn không đủ quyền xóa chương trình khuyến mãi này!";
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    result = ex.Message;
+                }
+            });
             return result;
         }
         #endregion

@@ -42,8 +42,8 @@ namespace Api.ManagerGift.Services
             {
                 try
                 {
-                    var lstOrgs = ss.Query<Organization>().ToList();
-                    var lstRoots = lstOrgs.Where(p => p.ParentId == null).ToList();
+                    var lstOrgs = ss.Query<Organization>().OrderByDescending(o=>o.CreateDate).ToList();
+                    var lstRoots = lstOrgs.Where(p => p.ParentId == null).OrderByDescending(o => o.CreateDate).ToList();
                     foreach (var item in lstRoots)
                     {
                         var currentItem = Mapper.Map<NewOrganizationDTO>(item);
@@ -85,7 +85,8 @@ namespace Api.ManagerGift.Services
                             ParentId = obj.ParentId,
                             ManageCode = obj.ManageCode,
                             Address = obj.Address,
-                            Region = obj.Region
+                            Region = obj.Region,
+                            CreateDate = DateTime.Now
                         });
                         result = "Thành công";
                     }
@@ -193,7 +194,7 @@ namespace Api.ManagerGift.Services
         //}
         private void NewRecursion(List<Organization> lstOrg, NewOrganizationDTO currentItem)
         {
-            var items = Mapper.Map<List<NewOrganizationDTO>>(lstOrg.Where(p => p.ParentId == currentItem.Id).ToList());
+            var items = Mapper.Map<List<NewOrganizationDTO>>(lstOrg.Where(p => p.ParentId == currentItem.Id).OrderByDescending(o=>o.CreateDate).ToList());
             currentItem.items = items;
             foreach (var item in items)
             {

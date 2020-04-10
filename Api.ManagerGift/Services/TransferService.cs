@@ -88,10 +88,11 @@ namespace Api.ManagerGift.Services
                                            _tranfers.StageCurrent,
                                            _tranfers.CreatedBy,
                                            CreatedDate = ContextProvider.GetConvertDatetime(_tranfers.CreatedDate),
-                                       }).OrderBy(v => v.Status).OrderByDescending(v=>v.CreatedDate);
+                                           CreatedDateOrderBy = _tranfers.CreatedDate,
+                                       }).OrderBy(v => v.Status).OrderByDescending(v=>v.CreatedDateOrderBy);
 
 
-                    lstResults.ListTranfers = lstTranfers.OrderByDescending(o => o.CreatedDate).Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
+                    lstResults.ListTranfers = lstTranfers.OrderByDescending(o => o.CreatedDateOrderBy).Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
 
                     var total = lstTranfers.Count();
                     lstResults.TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;
@@ -908,7 +909,7 @@ namespace Api.ManagerGift.Services
                             DonViThucHien = ContextProvider.GetOrganizationName(organization, p.AssignDeaprtmentId),
                             NguoiThucHien = ContextProvider.GetFullName(lstUser, p.AssignUserId),
                             p.Status,
-                            p.UpdateDate
+                            UpdateDate = ContextProvider.GetConvertDatetimeDDMMYYYHHmm(p.UpdateDate)
                         }).ToList();
                     result = logTranfer;
                 });

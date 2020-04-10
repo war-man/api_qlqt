@@ -11,5 +11,6 @@ namespace Api.ManagerGift.Entities
         public virtual string ManageCode { get; set; }
         public virtual string Address { get; set; }
         public virtual string Region { get; set; }
+        public virtual DateTime CreateDate { get; set; }
     }
 }

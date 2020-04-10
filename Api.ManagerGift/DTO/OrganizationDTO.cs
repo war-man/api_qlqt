@@ -16,6 +16,7 @@ namespace Api.ManagerGift.DTO
         public string ManageCode { get; set; }
         public string Address { get; set; }
         public string Region { get; set; }
+        public DateTime CreateDate { get; set; }
         public List<OrganizationDTO> lstChilds { get; set; }
     }
 }

@@ -79,6 +79,12 @@ namespace Api.ManagerGift.Controllers
 
         [HttpGet("CheckMaCTKM/{codeCTKM}")]
         public IActionResult CheckMaCTKM(string codeCTKM) => Ok(promotionsService.CheckMaCTKM(codeCTKM));
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(Guid id)
+        {
+            return Ok(promotionsService.Delete(HttpContext.User,id));
+        }
         #endregion
     }
 }

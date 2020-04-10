@@ -15,6 +15,7 @@ namespace Api.ManagerGift.Maps
             Map(p => p.ManageCode);
             Map(p => p.Address);
             Map(p => p.Region);
+            Map(p => p.CreateDate);
         }
     }
 }

@@ -14,5 +14,6 @@ namespace Api.ManagerGift.DTO
         public string Region { get; set; }
         public string RegionName { get; set; }
         public string ParentName { get; set; }
+        public DateTime CreateDate { get; set; }
     }
 }
