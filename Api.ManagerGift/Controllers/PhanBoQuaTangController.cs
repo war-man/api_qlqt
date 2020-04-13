@@ -1,4 +1,5 @@
 ﻿using Api.ManagerGift.DTO;
+using Api.ManagerGift.Entities;
 using Api.ManagerGift.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +15,10 @@ namespace Api.ManagerGift.Controllers
     {
         private readonly PhanBoQuaTangService _PhanBoQuaTangService = new PhanBoQuaTangService();
 
-        [HttpGet("{pageNo}/{organizationId}/{promotionId}")]
-        public IActionResult Get(int pageNo, string organizationId, string promotionId)
+        [HttpGet("{pageNo}/{pageSize}/{organizationId}/{promotionId}")]
+        public IActionResult Get(int pageNo,int pageSize, string organizationId, string promotionId)
         {
-            return Ok(_PhanBoQuaTangService.Get(pageNo, organizationId, promotionId, HttpContext.User));
+            return Ok(_PhanBoQuaTangService.Get(pageNo, pageSize, organizationId, promotionId, HttpContext.User));
         }
 
         [HttpPost("{flag}/{PromotionId}")]
@@ -26,13 +27,18 @@ namespace Api.ManagerGift.Controllers
             return Ok(_PhanBoQuaTangService.InitPhanBoQuaTang(obj, HttpContext.User, flag, PromotionId));
         }
 
-        [HttpGet("DetailPhanBo/{flagDieuChuyen}")]
-        public IActionResult DetailPhanBoQuaTang(string flagDieuChuyen)
+        [HttpGet("DetailPhanBo/{TranferId}")]//{flagDieuChuyen}")]
+        public IActionResult DetailPhanBoQuaTang(string TranferId)//string flagDieuChuyen)
         {
-            var _flagDieuChuyen = new Guid(flagDieuChuyen);
-            return Ok(_PhanBoQuaTangService.DetailPhanBoQuaTang(_flagDieuChuyen));
+            //var _flagDieuChuyen = new Guid(flagDieuChuyen);
+            var _tranferId = new Guid(TranferId);
+            return Ok(_PhanBoQuaTangService.DetailPhanBoQuaTang(_tranferId)); //_flagDieuChuyen));
         }
-
+        [HttpPost("Update/{TranferId}")]
+        public IActionResult UpdatePhanBoQuaTang([FromBody] List<TransferDetail> obj,string TranferId)
+        {
+            return Ok(_PhanBoQuaTangService.UpdatePhanBoQuaTang(obj, HttpContext.User, TranferId));
+        }
         [HttpGet("GetBranch/{flagDieuChuyen}/{idGift}")]
         public IActionResult GetBranch(string flagDieuChuyen, string idGift)
         {
@@ -55,7 +61,11 @@ namespace Api.ManagerGift.Controllers
             var _promotionId = new Guid(PromotionId);
             return Ok(_PhanBoQuaTangService.HoanPhanBo_LuuHoacGuiDuyet(obj, flag, _promotionId, HttpContext.User));
         }
-
+        [HttpPost("UpdateHPB/{TranferId}")]
+        public IActionResult UpdateHoanPhanBoQuaTang([FromBody] List<TransferDetail> obj, string TranferId)
+        {
+            return Ok(_PhanBoQuaTangService.UpdateHoanPhanBoQuaTang(obj, HttpContext.User, TranferId));
+        }
         [HttpGet("HoanPhanBo/{flagDieuChuyen}/{flag}")]
         public IActionResult HoanPhanBo_Duyet(string flagDieuChuyen, string flag)
         {

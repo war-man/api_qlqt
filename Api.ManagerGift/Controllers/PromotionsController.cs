@@ -24,7 +24,7 @@ namespace Api.ManagerGift.Controllers
         /// <returns></returns>
         [HttpGet("{pageNo}/{status}/{namePromotion}/{year}")]
         public IActionResult Get(int pageNo, string status, string namePromotion, int year) 
-            => Ok(promotionsService.Get(pageNo, status, namePromotion, year));
+            => Ok(promotionsService.Get(HttpContext.User,pageNo, status, namePromotion, year));
 
         /// <summary>
         /// nhan vien gui lanh dao duyet: chuong trinh khuyen mai.

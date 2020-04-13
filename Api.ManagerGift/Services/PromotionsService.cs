@@ -251,12 +251,13 @@ namespace Api.ManagerGift.Services
         /// <summary>
         /// get danh sách promotion cho hiển thị list.
         /// </summary>
-        public dynamic Get(int pageNo, string status, string namePromotion, int year)
+        public dynamic Get(ClaimsPrincipal principal,int pageNo, string status, string namePromotion, int year)
         {
             int pageSize = 20;
             dynamic lstResults = new ExpandoObject();
             namePromotion = string.IsNullOrWhiteSpace(namePromotion) ? "" : namePromotion;
             status = string.IsNullOrWhiteSpace(status) ? "" : status;
+            var user = ContextProvider.GetUserInfo(principal);
             SessionManager.DoWork(ss =>
             {
                 try
@@ -269,6 +270,8 @@ namespace Api.ManagerGift.Services
                         listPromotions = listPromotions.Where(p => p.Status == int.Parse(status)).ToList();
                     if (year != 0)
                         listPromotions = listPromotions.Where(p => p.CreatedDate.Value.Year == year).ToList();
+                    if(user.Position.IsLeader)
+                        listPromotions = listPromotions.Where(p => p.Status != 0).ToList();
                     var PromotionIds = listPromotions.Select(s => s.Id).Distinct().ToList();
                     Guid defaultId = Guid.NewGuid();
                     var tranfers = ss.Query<TransferGift>().Where(p => PromotionIds.Contains(p.PromotionId ?? defaultId)).
@@ -613,7 +616,7 @@ namespace Api.ManagerGift.Services
                         {
                             promotion.Code = obj.Code;
                             promotion.Name = obj.Name;
-                            promotion.Status = (int)ContextProvider.statusTransfer.Draft;
+                            //promotion.Status = (int)ContextProvider.statusTransfer.Draft;
                             promotion.NumberOdEdit = 0;
                             promotion.ConfigPromotion = obj.ConfigPromotion;
                             promotion.StartDate = obj.StartDate;

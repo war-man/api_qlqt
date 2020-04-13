@@ -23,6 +23,8 @@ namespace Api.ManagerGift.Maps
             Map(p => p.FlagDieuChuyen);
             Map(p => p.NguoiDuyet);
             Map(p => p.NgayDuyet);
+            Map(p => p.UpdateDate);
+            Map(p => p.NumberOdEdit);
         }
     }
 }

@@ -17,10 +17,10 @@ namespace Api.ManagerGift.Controllers
         private readonly TransferInputService _transerInputService = new TransferInputService();
         private readonly TransferOutputService _transferOutputService = new TransferOutputService();
 
-        [HttpGet("{pageNo}/{idProduct}/{maQuaTang}/{donViThucHien}/{donViChuyen}/{donViNhan}")]
-        public IActionResult GetListTranfer(int pageNo, string idProduct, string maQuaTang, string donViThucHien, string donViChuyen, string donViNhan)
+        [HttpGet("{pageNo}/{pageSize}/{idProduct}/{maQuaTang}/{donViThucHien}/{donViChuyen}/{donViNhan}")]
+        public IActionResult GetListTranfer(int pageNo, int pageSize, string idProduct, string maQuaTang, string donViThucHien, string donViChuyen, string donViNhan)
         {
-            return Ok(_transferService.Get(pageNo, HttpContext.User, idProduct, maQuaTang, donViThucHien, donViChuyen, donViNhan));
+            return Ok(_transferService.Get(pageNo,pageSize, HttpContext.User, idProduct, maQuaTang, donViThucHien, donViChuyen, donViNhan));
         }
 
         [HttpGet("TransDetail/{id}")]

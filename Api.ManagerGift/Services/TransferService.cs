@@ -15,10 +15,9 @@ namespace Api.ManagerGift.Services
 {
     public class TransferService
     {
-        public dynamic Get(int pageNo, ClaimsPrincipal principal,
+        public dynamic Get(int pageNo, int pageSize, ClaimsPrincipal principal,
             string idProduct, string maQuaTang, string donViThucHien, string donViChuyen, string donViNhan)
         {
-            int pageSize = 20;
             dynamic lstResults = new ExpandoObject();
             var userinfo = ContextProvider.GetUserInfo(principal);
             SessionManager.DoWork(ss =>

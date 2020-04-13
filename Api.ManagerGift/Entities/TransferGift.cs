@@ -11,10 +11,13 @@ namespace Api.ManagerGift.Entities
         public virtual Guid? DepartmentId { get; set; }
         public virtual Guid? PromotionId { get; set; }
         public virtual int Status { get; set; }
+        public virtual int NumberOdEdit { get; set; }
+        
         public virtual DateTime? Deadline { get; set; }
         public virtual Guid StageCurrent { get; set; }
         public virtual Guid FlagDieuChuyen { get; set; }
         public virtual Guid? NguoiDuyet { get; set; }
         public virtual DateTime? NgayDuyet { get; set; }
+        public virtual DateTime? UpdateDate { get; set; }
     }
 }

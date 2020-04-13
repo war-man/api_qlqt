@@ -13,6 +13,7 @@ namespace Api.ManagerGift.DTO
         public Guid? DepartmentId { get; set; }
         public Guid? PromotionId { get; set; }
         public int Status { get; set; }
+        public int NumberOdEdit { get; set; }
         public Guid CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; }
         public Guid ? ApprovedBy { get; set; }
@@ -22,5 +23,6 @@ namespace Api.ManagerGift.DTO
         public Guid? ReceivingPromotionId { get; set; }
         public Guid? StageId { get; set; }
         public string Comment { get; set; }
+        public DateTime UpdateDate { get; set; }
     }
 }
