@@ -131,26 +131,34 @@ namespace Api.ManagerGift.Services
                 try
                 {
                     var obj = ss.Get<User>(id);
-                    if (obj.IsUser)
+                    if (obj.UserName == "nva" || obj.UserName == "admin")
                     {
-                        result = "Bạn không thể xóa. Vì user này đã có thao tác trên hệ thống.";
+                        result = "Bạn không thể xóa. Vì user này là user hệ thống.";
                     }
                     else
                     {
-                        if (IsUser(obj.Id))
+                        if (obj.IsUser)
                         {
-                            obj.IsUser = true;
                             result = "Bạn không thể xóa. Vì user này đã có thao tác trên hệ thống.";
                         }
                         else
                         {
-                            ss.Delete(obj);
-                            //Xóa tất cả các log pass theo user này
-                            var userPassLog = ss.Query<UserLogPassword>().Where(w => w.UserId == id).ToList();
-                            userPassLog.ForEach(itm => {
-                                ss.Delete(itm);
-                            });
-                            result = "Đã xóa";
+                            if (IsUser(obj.Id))
+                            {
+                                obj.IsUser = true;
+                                result = "Bạn không thể xóa. Vì user này đã có thao tác trên hệ thống.";
+                            }
+                            else
+                            {
+                                ss.Delete(obj);
+                                //Xóa tất cả các log pass theo user này
+                                var userPassLog = ss.Query<UserLogPassword>().Where(w => w.UserId == id).ToList();
+                                userPassLog.ForEach(itm =>
+                                {
+                                    ss.Delete(itm);
+                                });
+                                result = "Đã xóa";
+                            }
                         }
                     }
                 }

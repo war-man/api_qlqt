@@ -35,6 +35,9 @@
         public const string PARAM_DIEU_CHUYEN_NGANG = "4E0F159C-1B09-4FAB-8D2D-FA38DF55006A";
         public const string PARAM_DIEU_CHUYEN_NOI_BO = "81A05F45-9BE2-4754-A5D1-D0F8632AC8F8";
         public const string PARAM_TAO_CHUONG_TRINH_KHUYEN_MAI = "C6698F1C-5186-4025-B097-ECBD521B35E5";
+        public const string PARAM_PHAN_BO = "04D0CB82-09CE-4B19-80DD-6CBAC9CEB754";
+        public const string PARAM_HOAN_PHAN_BO = "314E1F0B-938D-46CC-BB05-E2B722871BA5";
+        public const string PARAM_TANG_QUA_KH = "D0F544AB-14AF-4EF7-98F9-A7A71E7E8944";
 
         // MESSAGE
         public const string LUU_THANH_CONG = "Lưu thành công!";

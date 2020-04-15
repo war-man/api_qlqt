@@ -261,15 +261,29 @@ namespace Api.ManagerGift.Services
                         && s.PromotionId == null
                         && s.Amount > 0).Select(p => new
                         {
-                            p.GiftId
+                            p.GiftId,
+                            p.Amount
                         }).ToList();
                     if (giftIdInStore.Count > 0)
                     {
                         var gift = ss.Query<Gift>().ToList();
+                        var giftIds = gift.Select(s => s.Id).ToList();
+                        var giftPromotion = ss.Query<GiftPromotion>().Where(s => giftIds.Contains(s.GiftId))
+                                            .Select(p => new {
+                                                p.Amount,
+                                                p.GiftId,
+                                                p.GiftPromotionId
+                                            }).ToList();
+                        var giftPromotionIds = gift.Select(s => s.Id).ToList();
+                        var promotions = ss.Query<Promotion>().Where(s => giftPromotionIds.Contains(s.GiftPromotionId))
+                                            .Select(p => new {
+                                                p.Status,
+                                                p.GiftPromotionId
+                                            }).ToList();
                         var query = (from p in gift
-                                     join _giftIdInStore in giftIdInStore
-                                        on p.Id equals _giftIdInStore.GiftId
-                                        select new
+                                     join _giftP in giftPromotion on p.Id equals _giftP.GiftId
+                                     join _giftIdInStore in giftIdInStore on _giftP.GiftId equals _giftIdInStore.GiftId
+                                     select new
                                         {
                                             p.Id,
                                             p.Code,
@@ -285,7 +299,8 @@ namespace Api.ManagerGift.Services
                                             UnitName = p.Unit.Name,
                                             p.Price,
                                             value = p.Name,
-                                            label = p.Code
+                                            label = p.Code,
+                                            Amount = _giftIdInStore.Amount - (promotions.Any(a=>a.GiftPromotionId==_giftP.GiftPromotionId && a.Status==2) ? _giftP.Amount : 0)
                                         }
                                      ).ToList();
                         result = query;

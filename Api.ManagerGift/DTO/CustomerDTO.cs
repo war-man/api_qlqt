@@ -7,6 +7,8 @@ namespace Api.ManagerGift.DTO
         public string Acctno { get; set; }
         public string PhanHe { get; set; }
         public string TENLOAIHINH { get; set; }
+        public string TENKH { get; set; }
+        public string CUSTID { get; set; }
         public string CusName { get; set; }
         public string CusId { get; set; }
         public decimal TERM { get; set; }

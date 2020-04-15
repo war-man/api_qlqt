@@ -21,10 +21,9 @@ namespace Api.ManagerGift.Controllers
             try
             {
                 var webClient = new WebClient();
-                var url = string.Format("http://smartbankservice.cbbank.vn/serviceLab/Get_Customer_InfoNEW_2019_LAB?accNo={0}&type={1}", accNo, phanhe);
+                var url = string.Format("http://smartbankservice.cbbank.vn/serviceLab/Get_Customer_InfoNew_2019_LAB?accNo={0}&type={1}", accNo, phanhe);
                 webClient.Encoding = Encoding.UTF8;
                 var dataJson = webClient.DownloadString(url);
-                //var dataJson = _TangQuaKhachHangService.Temp(accNo, phanhe); // vì kết nối đến corebanking lâu, nên tạo link giả này.
                 var data = _TangQuaKhachHangService.Check(accNo, dataJson, phanhe, HttpContext.User);
 
                 return Ok(data);

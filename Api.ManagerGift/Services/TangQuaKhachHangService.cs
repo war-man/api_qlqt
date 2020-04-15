@@ -67,6 +67,7 @@ namespace Api.ManagerGift.Services
                 var userinfo = ContextProvider.GetUserInfo(principal);
 
                 var infoCusFromCoreBanking = ConvertJson(json);
+                //var infoCusFromCoreBanking = JsonConvert.DeserializeObject<CustomerDTO>(json);
 
                 SessionManager.DoWork(ss =>
                 {
@@ -180,7 +181,7 @@ namespace Api.ManagerGift.Services
                     }
                 });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 throw;
             }

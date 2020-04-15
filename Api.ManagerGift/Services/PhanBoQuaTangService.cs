@@ -144,7 +144,7 @@ namespace Api.ManagerGift.Services
                         else
                         {
                             checkAmount = false;
-                            result = $"Tổng số quà tặng phân bổ là: {giftPhanBo} > số quà tặng trong kho: {(amount - countAmount)}!\nAnh/Chị vui lòng kiểm tra lại.";
+                            result = $"Tổng số quà tặng phân bổ là: {giftPhanBo} > số quà tặng đã khai báo cho CTKM: {(amount - countAmount)}!\nAnh/Chị vui lòng kiểm tra lại.";
                             break;
                         }
                     }
@@ -286,7 +286,7 @@ namespace Api.ManagerGift.Services
                         else
                         {
                             checkAmount = false;
-                            result = $"Tổng số quà tặng phân bổ là: {giftPhanBo} > số quà tặng trong kho: {(amount - countAmount)}!\nAnh/Chị vui lòng kiểm tra lại.";
+                            result = $"Tổng số quà tặng phân bổ là: {giftPhanBo} > số quà tặng đã khai báo cho CTKM: {(amount - countAmount)}!\nAnh/Chị vui lòng kiểm tra lại.";
                             break;
                         }
                     }

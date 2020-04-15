@@ -65,7 +65,7 @@ namespace Api.ManagerGift.Controllers
         /// <returns></returns>
         [HttpGet("Detail/{IdPromotion}")]
         public IActionResult GetPromotion(string IdPromotion) 
-            => Ok(promotionsService.GetPromotion(new Guid(IdPromotion)));
+            => Ok(promotionsService.GetPromotion(HttpContext.User, new Guid(IdPromotion)));
 
         #region Nguyen Code
         /// <summary>

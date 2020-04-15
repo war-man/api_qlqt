@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace Api.ManagerGift.Controllers
 {
@@ -20,8 +21,15 @@ namespace Api.ManagerGift.Controllers
         private readonly IHostingEnvironment _hostingEnvironment;
         public ReportController(IHostingEnvironment hostingEnvironment) => _hostingEnvironment = hostingEnvironment;
 
-        [HttpGet("{productId}/{idPromotion}/{fromDate}/{toDate}")]
-        public string Get(string productId, string idPromotion, string fromDate, string toDate)
+        [HttpGet("GetDataTranfer/{pageNo}/{pageSize}/{productId}/{idPromotion}/{fromDate}/{toDate}")]
+        public IActionResult GetDataTranfer(int pageNo, int pageSize, string productId, string idPromotion, string fromDate, string toDate)
+        {
+            var data = _reportService.GetDataReport(HttpContext.User, productId, idPromotion, fromDate, toDate);
+            int total = data.ToList().Count();
+            return Ok(new { List = data.ToList().Skip((pageNo - 1) * pageSize).Take(pageSize).ToList(), TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1 });
+        }
+        [HttpGet("ExportTranfer/{productId}/{idPromotion}/{fromDate}/{toDate}")]
+        public string GetExportTranfer(string productId, string idPromotion, string fromDate, string toDate)
         {
             var folder = "/DownloadWordExcel/";
             try
@@ -56,7 +64,7 @@ namespace Api.ManagerGift.Controllers
                         break;
                 }
                 var workbook = new Workbook(contentRootPathTemp + nameReport + ".xlsx");
-                var data = _reportService.GetDataReport(productId, idPromotion, fromDate, toDate);
+                var data = _reportService.GetDataReport(HttpContext.User, productId, idPromotion, fromDate, toDate);
                 string[] title = new string[] { nameTitle, "Từ ngày " + fromDate + ", Đến ngày " + toDate };
 
                 DataTable outData;
@@ -106,7 +114,7 @@ namespace Api.ManagerGift.Controllers
                         break;
                 }
                 var workbook = new Workbook(contentRootPathTemp + nameReport + ".xlsx");
-                var data = _reportService.GetDataReportInventory(HttpContext.User,productId, idPromotion, toDate);
+                var data = _reportService.GetDataReportInventory(HttpContext.User, productId, idPromotion, toDate);
                 string[] title = new string[] { nameTitle, " ngày " + toDate };
 
                 DataTable outData;
@@ -114,7 +122,7 @@ namespace Api.ManagerGift.Controllers
                 var worksheet = workbook.Worksheets[0];
                 worksheet.Cells.ImportArray(title, 0, 0, true);
                 worksheet.Cells.ImportDataTable(outData, false, "A5");
-                
+
                 var fileName = DateTime.Now.ToString("yyyyMMdd_hhmmss_") + nameExport;
                 workbook.Save(contentRootPathExport + fileName + ".xlsx", SaveFormat.Xlsx);
                 return folder + fileName + ".xlsx";
@@ -124,6 +132,15 @@ namespace Api.ManagerGift.Controllers
                 Console.WriteLine(ex);
                 return folder + "Error.xlsx";
             }
+        }
+
+        [HttpGet("GetInventory/{pageNo}/{pageSize}/{productId}/{idPromotion}/{toDate}")]
+        public IActionResult GetInventory(int pageNo, int pageSize, string productId, string idPromotion, string toDate)
+        {
+
+            var data = _reportService.GetDataReportInventory(HttpContext.User, productId, idPromotion, toDate);
+            int total = data.ToList().Count();
+            return Ok(new { List = data.ToList().Skip((pageNo - 1) * pageSize).Take(pageSize).ToList(), TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1 });
         }
 
         [HttpGet]

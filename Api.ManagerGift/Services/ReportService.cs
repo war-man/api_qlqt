@@ -12,7 +12,7 @@ namespace Api.ManagerGift.Services
 {
     public class ReportService
     {
-        public List<BaoCaoQuaTangDTO> GetDataReport(string productId, string idPromotion, string fromDate, string toDate)
+        public List<BaoCaoQuaTangDTO> GetDataReport(ClaimsPrincipal principal,string productId, string idPromotion, string fromDate, string toDate)
         {
             var result = new List<BaoCaoQuaTangDTO>();
             SessionManager.DoWork(ss =>
@@ -23,7 +23,7 @@ namespace Api.ManagerGift.Services
                                        System.Globalization.CultureInfo.InvariantCulture);
                     var _toDate = DateTime.ParseExact(toDate + " 00:00:00,000", "yyyy-MM-dd HH:mm:ss,fff",
                                        System.Globalization.CultureInfo.InvariantCulture);
-
+                    var userinfo = ContextProvider.GetUserInfo(principal);
                     var promotion = ss.Query<Promotion>().ToList();
                     var organization = ss.Query<Organization>().ToList();
 
@@ -31,7 +31,15 @@ namespace Api.ManagerGift.Services
 
                     if (productId != null)
                         tranfer = tranfer.Where(s => s.Product.Id == new Guid(productId)).ToList();
-                    if (idPromotion != null)
+                    if (userinfo.OrganizationCode!= "QLBH" && userinfo.UserName != "admin" && userinfo.UserName != "nva")
+                    {
+                        //Nếu là LD CN/PGD
+                        if (userinfo.Position.IsLeader)
+                            tranfer = tranfer.Where(s => s.DepartmentId == userinfo.Organization.Id).ToList();
+                        else//CV CN/PGD
+                            tranfer = tranfer.Where(s => s.CreatedBy == userinfo.Id).ToList();
+                    }
+                    if (idPromotion != null && productId.ToUpper() != "7A452975-E667-41CB-9B32-5875D357FF37")
                         tranfer = tranfer.Where(s => s.PromotionId == new Guid(idPromotion)).ToList();
 
                     var lstTranferId = tranfer.Select(s => s.Id);
@@ -68,6 +76,123 @@ namespace Api.ManagerGift.Services
 
 
         public List<StoreDTO> GetDataReportInventory(ClaimsPrincipal principal, string productId, string idPromotion, string toDate)
+        {
+            var result = new List<StoreDTO>();
+            var userinfo = ContextProvider.GetUserInfo(principal);
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    var _toDate = DateTime.ParseExact(toDate.Replace("-", "/") + " 23:59:59,000", "dd/MM/yyyy HH:mm:ss,fff",
+                                       System.Globalization.CultureInfo.InvariantCulture);
+                    var lstPromotions = ss.Query<Promotion>().Where(w => w.CreatedDate <= _toDate && w.Status == 2).ToList();
+                    if (!string.IsNullOrEmpty(idPromotion))
+                        lstPromotions = lstPromotions.Where(n => n.Id == Guid.Parse(idPromotion)).ToList();
+                    if (userinfo.OrganizationCode != "QLBH" && userinfo.UserName != "admin" && userinfo.UserName != "nva")
+                    {
+                        //Nếu là LD CN/PGD
+                        if (userinfo.Position.IsLeader)
+                            lstPromotions = lstPromotions.Where(s => s.NguoiDuyet == userinfo.Organization.Id).ToList();
+                        else//CV CN/PGD
+                            lstPromotions = lstPromotions.Where(s => s.CreatedBy == userinfo.Id).ToList();
+                    }
+                    var idPromotions = lstPromotions.Select(s => s.Id).ToList();
+                    var idGiftPromotions = lstPromotions.Select(s => s.GiftPromotionId).ToList();
+                    var giftPromotions = ss.Query<GiftPromotion>().Where(s => idGiftPromotions.Contains(s.GiftPromotionId)).ToList();
+                    
+                    var lstGiftsId = giftPromotions.Select(s => s.GiftId).ToList();
+                    var gifts = ss.Query<Gift>().Where(s => lstGiftsId.Contains(s.Id)).ToList();
+                    var transferGift = ss.Query<TransferGift>().Where(s => s.Status == 2).ToList();
+                    var transferDetails = ss.Query<TransferDetail>().Where(s => lstGiftsId.Contains(s.GiftId)).ToList();
+                    var stores = ss.Query<Store>().Where(s => lstGiftsId.Contains(s.GiftId)).ToList();
+                    
+
+                    #region SL Nhap kho
+                    var idTranNK = transferGift.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_NHAP_KHO && w.Status==2).Select(s => s.Id);
+                    var gbNKDetails = transferDetails.Where(s => idTranNK.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment, productId }).Select(s => new
+                    {
+                        s.Key.GiftId,
+                        DepartmentId = s.Key.ReceivingDepartment,
+                        Total = s.Sum(t => t.Amount)
+                    }).ToList();
+                    #endregion
+
+                    #region SL Xuất kho
+                    var idTranXK = transferGift.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_XUAT_KHO && w.Status == 2).Select(s => s.Id);
+                    var gbXKDetails = transferDetails.Where(s => idTranXK.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment, productId }).Select(s => new
+                    {
+                        s.Key.GiftId,
+                        DepartmentId = s.Key.ReceivingDepartment,
+                        Total = s.Sum(t => t.Amount)
+                    }).ToList();
+                    #endregion
+
+                    #region SL Dieu chuyen ngang
+                    var idTranDCN = transferGift.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_DIEU_CHUYEN_NGANG && w.Status == 2).Select(s => s.Id);
+                    var gbDCNDetails = transferDetails.Where(s => idTranDCN.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment, productId }).Select(s => new
+                    {
+                        s.Key.GiftId,
+                        DepartmentId = s.Key.ReceivingDepartment,
+                        Total = s.Sum(t => t.Amount)
+                    }).ToList();
+                    #endregion
+
+                    #region SL Dieu chuyen noi bo
+                    var idTranDCNB = transferGift.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_DIEU_CHUYEN_NOI_BO && w.Status == 2).Select(s => s.Id);
+                    var gbDCNBDetails = transferDetails.Where(s => idTranDCNB.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment, productId }).Select(s => new
+                    {
+                        s.Key.GiftId,
+                        DepartmentId = s.Key.ReceivingDepartment,
+                        Total = s.Sum(t => t.Amount)
+                    }).ToList();
+                    #endregion
+
+                    #region SL Phan Bo
+                    var idTranPBo = transferGift.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_PHAN_BO && w.Status == 2).Select(s => s.Id);
+                    var gbPBoDetails = transferDetails.Where(s => idTranPBo.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment, productId }).Select(s => new
+                    {
+                        s.Key.GiftId,
+                        DepartmentId = s.Key.ReceivingDepartment,
+                        Total = s.Sum(t => t.Amount)
+                    }).ToList();
+                    #endregion
+
+                    //So luong ton kho
+                    var groupByStores = stores.GroupBy(g => new { g.GiftId, g.DepartmentId }).Select(s => new { s.Key.GiftId, s.Key.DepartmentId, Total = s.Sum(t => t.Amount), }).ToList();
+                    var lstOrgan = ss.Query<Organization>().ToList();
+                    groupByStores.ForEach(store =>
+                    {
+                        var amountTotal = gbNKDetails.Where(w => w.GiftId == store.GiftId && w.DepartmentId == store.DepartmentId).Sum(s => s.Total);
+                        var amountAttribution = gbPBoDetails.Where(w => w.GiftId == store.GiftId && w.DepartmentId == store.DepartmentId).Sum(s => s.Total);
+                        //gbDCNDetails.Where(w => w.GiftId == store.GiftId && w.DepartmentId == store.DepartmentId).Sum(s => s.Total)
+                        //+ gbDCNBDetails.Where(w => w.GiftId == store.GiftId && w.DepartmentId == store.DepartmentId).Sum(s => s.Total);
+                        var depCode = ContextProvider.GetOrganizationCode(lstOrgan, store.DepartmentId);
+                        var saveItem = new StoreDTO
+                        {
+                            GiftId = store.GiftId,
+                            GiftName = ContextProvider.GiftName(gifts, store.GiftId),
+                            GiftCode = ContextProvider.GiftCode(gifts, store.GiftId),
+                            Price = (ContextProvider.GiftPrice(gifts, store.GiftId) * store.Total).ToString("N", CultureInfo.CurrentCulture),
+                            DepartmentId = store.DepartmentId,
+                            DepartmentName = ContextProvider.GetOrganizationName(lstOrgan, store.DepartmentId),
+                            AmountInventory = store.Total,//amountTotal - amountAttribution,
+                            AmountUse = depCode=="QLBH" ? 0 : amountAttribution - amountTotal,
+                            AmountAttribution = depCode == "QLBH" ? 0 : amountAttribution
+                        };
+                        if (!string.IsNullOrEmpty(saveItem.GiftCode))
+                            result.Add(saveItem);
+                    });
+
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            });
+            return result;
+        }
+
+        public List<StoreDTO> GetDataReportInventoryBak(ClaimsPrincipal principal, string productId, string idPromotion, string toDate)
         {
             var result = new List<StoreDTO>();
             var userinfo = ContextProvider.GetUserInfo(principal);
