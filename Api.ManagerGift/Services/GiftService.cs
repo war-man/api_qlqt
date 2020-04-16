@@ -274,6 +274,11 @@ namespace Api.ManagerGift.Services
                                                 p.GiftId,
                                                 p.GiftPromotionId
                                             }).ToList();
+                        var groupGP = giftPromotion.GroupBy(g => new { g.GiftId})
+                                            .Select(p => new {
+                                                Amount = p.Sum(t => t.Amount),
+                                                p.Key.GiftId,
+                                            }).ToList();
                         var giftPromotionIds = gift.Select(s => s.Id).ToList();
                         var promotions = ss.Query<Promotion>().Where(s => giftPromotionIds.Contains(s.GiftPromotionId))
                                             .Select(p => new {
@@ -281,8 +286,7 @@ namespace Api.ManagerGift.Services
                                                 p.GiftPromotionId
                                             }).ToList();
                         var query = (from p in gift
-                                     join _giftP in giftPromotion on p.Id equals _giftP.GiftId
-                                     join _giftIdInStore in giftIdInStore on _giftP.GiftId equals _giftIdInStore.GiftId
+                                     join _giftIdInStore in giftIdInStore on p.Id equals _giftIdInStore.GiftId
                                      select new
                                         {
                                             p.Id,
@@ -300,7 +304,7 @@ namespace Api.ManagerGift.Services
                                             p.Price,
                                             value = p.Name,
                                             label = p.Code,
-                                            Amount = _giftIdInStore.Amount - (promotions.Any(a=>a.GiftPromotionId==_giftP.GiftPromotionId && a.Status==2) ? _giftP.Amount : 0)
+                                            Amount = _giftIdInStore.Amount - (groupGP.FirstOrDefault(f=>f.GiftId==p.Id)==null?0 :groupGP.FirstOrDefault(f => f.GiftId == p.Id).Amount)
                                         }
                                      ).ToList();
                         result = query;

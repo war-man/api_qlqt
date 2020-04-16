@@ -39,6 +39,30 @@ namespace Api.ManagerGift.Services
             return result;
         }
 
+        public dynamic GetAlls(ClaimsPrincipal principal)
+        {
+            dynamic result = new ExpandoObject();
+            try
+            {
+                SessionManager.DoWork(ss =>
+                {
+                    var userinfo = ContextProvider.GetUserInfo(principal);
+                    var permision = ss.Query<SysPermision>().Select(s=> new {
+                        s.PermisionId,
+                        s.PermisionName,
+                        value = s.PermisionId,
+                        label = s.PermisionName
+                    }).ToList();
+                    result = permision.ToList();
+                });
+            }
+            catch (Exception)
+            {
+
+            }
+            return result;
+        }
+
         public DataTable GetAll()
         {
             var data = new DataTable();

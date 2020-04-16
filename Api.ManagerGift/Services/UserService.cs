@@ -3,6 +3,7 @@ using Api.ManagerGift.Entities;
 using Api.ManagerGift.Sessions;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -65,7 +66,8 @@ namespace Api.ManagerGift.Services
                                 Email = obj.Email,
                                 FullName = obj.FullName,
                                 Status = obj.Status,
-                                MonthId = int.Parse(DateTime.UtcNow.ToString("yyyyMM"))
+                                MonthId = int.Parse(DateTime.UtcNow.ToString("yyyyMM")),
+                                PermisionId = obj.PermisionId
                             });
                             result = "Thành công";
                         }
@@ -106,6 +108,8 @@ namespace Api.ManagerGift.Services
                         user.Organization = organization;
                         user.FullName = obj.FullName;
                         user.Email = obj.Email;
+                        user.Status = obj.Status;
+                        user.PermisionId = obj.PermisionId;
                         ss.Update(user);
                         result = "Cập nhật thành công";
                     }
@@ -321,29 +325,35 @@ namespace Api.ManagerGift.Services
             }
             return result;
         }
-        public object GetUserFromId(Guid id)
+        public dynamic GetUserFromId(Guid id)
         {
-            var result = new object();
+            dynamic result = new ExpandoObject();
             SessionManager.DoWork(ss =>
             {
                 try
                 {
-                    result = ss.Query<User>().Where(w => w.Id == id)
-                        .Select(p => (object)new
-                        {
-                            p.Id,
-                            p.UserName,
-                            PositionCode = p.Position.Code,
-                            PositionName = p.Position.Name,
-                            OrganizationId = p.Organization.Id,
-                            OrganizationCode = p.Organization.Code,
-                            OrganizationName = p.Organization.Name,
-                            p.Email,
-                            p.FullName,
-                            p.Status,
-                            IsLeader = p.Position.IsLeader,
-                            p.MonthId
-                        }).FirstOrDefault();
+                    var permissions = ss.Query<SysPermision>().ToList();
+                    var users = ss.Query<User>().Where(w => w.Id == id).ToList();
+                    var item = (from user in users
+                             join permission in permissions on user.PermisionId equals permission.PermisionId
+                             select new
+                             {
+                                 user.Id,
+                                 user.UserName,
+                                 PositionCode = user.Position.Code,
+                                 PositionName = user.Position.Name,
+                                 OrganizationId = user.Organization.Id,
+                                 OrganizationCode = user.Organization.Code,
+                                 OrganizationName = user.Organization.Name,
+                                 user.PermisionId,
+                                 PermisionName = permission.PermisionName,
+                                 user.Email,
+                                 user.FullName,
+                                 user.Status,
+                                 IsLeader = user.Position.IsLeader,
+                                 user.MonthId
+                             });
+                    result.User = item.ToList().FirstOrDefault();
                 }
                 catch (Exception ex)
                 {
@@ -370,6 +380,7 @@ namespace Api.ManagerGift.Services
                         user.Organization = organization;
                         user.FullName = obj.FullName;
                         user.Status = obj.Status;
+                        user.PermisionId = obj.PermisionId;
                         ss.Update(user);
                         result = "Cập nhật thành công";
                     }

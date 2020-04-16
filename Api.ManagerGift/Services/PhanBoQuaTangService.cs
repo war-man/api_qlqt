@@ -137,7 +137,7 @@ namespace Api.ManagerGift.Services
                                              ).Select(p => p.Amount).ToList()
                                              .Sum();
                         var giftPhanBo = itm.chinhanh_pgd.Length * itm.Amount;
-                        if (giftPhanBo < (amount - countAmount))
+                        if (giftPhanBo <= (amount - countAmount))
                         {
                             checkAmount = true;
                         }
@@ -279,7 +279,7 @@ namespace Api.ManagerGift.Services
                                         ).Select(p => p.Amount).ToList()
                                         .Sum();
                         var giftPhanBo = itm.Amount;
-                        if (giftPhanBo < (amount - countAmount))
+                        if (giftPhanBo <= (amount - countAmount))
                         {
                             checkAmount = true;
                         }
@@ -510,10 +510,11 @@ namespace Api.ManagerGift.Services
                             var countAmount = ss.Query<TransferDetail>()
                                             .Where(s =>
                                                 s.GiftId == itm.GiftId &&
+                                                s.ReceivingDepartment == userinfo.Organization.Id &&
                                                 s.ReceivingPromotion == promotionId
                                             ).Select(p => p.Amount).ToList()
                                             .Sum();
-                            if (giftPhanBo < (amountInStore - countAmount))
+                            if (giftPhanBo <= (amountInStore - countAmount))
                                 checkAmount = true;
 
                             else

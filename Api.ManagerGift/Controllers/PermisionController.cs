@@ -21,6 +21,8 @@ namespace Api.ManagerGift.Controllers
 
         [HttpGet]
         public IActionResult Get() => Ok(_PermisionService.GetAll());
+        [HttpGet("GetAll")]
+        public IActionResult GetAll() => Ok(_PermisionService.GetAlls(HttpContext.User));
 
         [HttpGet("GetPermision/{url}")]
         public IActionResult GetPer(string url) => Ok(_PermisionService.GetPer(url));
