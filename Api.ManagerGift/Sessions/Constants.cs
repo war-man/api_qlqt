@@ -18,6 +18,7 @@
         public const string TAO_NHAP = "TAO_NHAP";
         public const string GUI_DUYET = "GUI_DUYET";
         public const string DUYET = "DUYET";
+        public const string TRINH_DUYET = "TRINH_DUYET";
         public const string TU_CHOI_DUYET = "TU_CHOI_DUYET";
 
         // TABLE PRODUCT

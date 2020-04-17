@@ -24,5 +24,6 @@ namespace Api.ManagerGift.DTO
         public Guid? StageId { get; set; }
         public string Comment { get; set; }
         public DateTime UpdateDate { get; set; }
+        public int SoLanHPB { get; set; }
     }
 }

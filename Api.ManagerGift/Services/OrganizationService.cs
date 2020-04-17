@@ -309,7 +309,7 @@ namespace Api.ManagerGift.Services
             {
 
             }
-            return lstResults;
+            return lstResults.OrderByDescending(od=>od.CreateDate).ToList();
         }
         public string GetVungMien(string code)
         {

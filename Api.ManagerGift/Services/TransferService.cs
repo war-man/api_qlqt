@@ -171,9 +171,11 @@ namespace Api.ManagerGift.Services
         /// <summary>
         /// Khởi tạo nhập kho và xuất kho
         /// </summary>
-        public string InitTransfer(List<DataNhapKho> lst, string productId, ClaimsPrincipal principal, string flag)
+        public dynamic InitTransfer(List<DataNhapKho> lst, string productId, ClaimsPrincipal principal, string flag)
         {
-            var result = string.Empty;
+            dynamic result = new ExpandoObject();
+            bool check = true;
+            string stringInfo = "";
             var _productId = new Guid(productId);
             try
             {
@@ -189,14 +191,14 @@ namespace Api.ManagerGift.Services
                     {
                         status = (int)ContextProvider.statusTransfer.Draft;
                         stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.TAO_NHAP);
-                        result = Constants.LUU_THANH_CONG;
+                        stringInfo = Constants.LUU_THANH_CONG;
                     }
 
                     if (flag == Constants.INITIALIZE)
                     {
                         status = (int)ContextProvider.statusTransfer.Initialize;
                         stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.GUI_DUYET);
-                        result = Constants.GUI_DUYET_THANH_CONG;
+                        stringInfo = Constants.GUI_DUYET_THANH_CONG;
                     }
 
                     if (stage != null)
@@ -267,7 +269,7 @@ namespace Api.ManagerGift.Services
                                     else
                                     {
                                         checkAmount = false;
-                                        result = $"{itm.GiftName} trong kho còn: {amount} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
+                                        stringInfo = $"{itm.GiftName} trong kho còn: {amount} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
                                         break;
                                     }
                                 }
@@ -319,12 +321,17 @@ namespace Api.ManagerGift.Services
                                         });
                                     }
                                 }
+                                check = checkAmount;
                                 break;
                         }
                     }
-                    else
-                        result = Constants.CHUC_NANG_NHAN_VIEN;
+                    else { 
+                        stringInfo = Constants.CHUC_NANG_NHAN_VIEN;
+                        check = false;
+                    }
                 });
+                result.Info = stringInfo;
+                result.Status = check;
             }
             catch (Exception ex)
             {
@@ -607,6 +614,8 @@ namespace Api.ManagerGift.Services
         {
             var result = string.Empty;
             var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+            var isLDCN_PGD = isTypeUser == 3 && userinfo.Position.IsLeader ? true : false;
             try
             {
                 SessionManager.DoWork(ss =>
@@ -616,6 +625,8 @@ namespace Api.ManagerGift.Services
                     var product = ss.Get<Product>(new Guid(productId));
 
                     var stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.DUYET);
+                    if(isLDCN_PGD)
+                        stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.TRINH_DUYET);
                     if (stage != null)
                     {
                         var transfer = ss.Get<TransferGift>(transferId);
@@ -631,7 +642,7 @@ namespace Api.ManagerGift.Services
                             AssignDeaprtmentId = userinfo.Organization.Id,
                             Comment = null,
                             Data = null,
-                            Status = (int)ContextProvider.statusTransfer.Approve,
+                            Status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve,
                             UpdateDate = dateNow,
                             Stage = stage,
                             Dealine = null
@@ -656,12 +667,12 @@ namespace Api.ManagerGift.Services
                         {
                             case Constants.PARAM_NHAP_KHO:
 
-                                transfer.Status = (int)ContextProvider.statusTransfer.Approve;
+                                transfer.Status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve;
                                 ss.Save(transferlog);
 
                                 foreach (var itm in lstTransferDetail)
                                 {
-                                    var store = lstStore.SingleOrDefault(p => p.DepartmentId == itm.ReceivingDepartment && p.GiftId == itm.GiftId && p.PromotionId == null);
+                                    var store = lstStore.FirstOrDefault(p => p.DepartmentId == itm.ReceivingDepartment && p.GiftId == itm.GiftId && p.PromotionId == null);
                                     if (store == null)
                                     {
                                         ss.Save(new Store
@@ -681,12 +692,14 @@ namespace Api.ManagerGift.Services
                                         store.Amount += itm.Amount;
                                         store.UpdatedDate = dateNow;
                                     }
+                                    if (isLDCN_PGD)
+                                        itm.ReceivingDepartment = Guid.Parse(Constants.ID_PHONG_QUAN_LY_BAN_HANG);
                                 }
                                 break;
 
                             case Constants.PARAM_XUAT_KHO:
 
-                                transfer.Status = (int)ContextProvider.statusTransfer.Approve;
+                                transfer.Status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve;
                                 ss.Save(transferlog);
 
                                 foreach (var itm in lstTransferDetail)
@@ -718,7 +731,7 @@ namespace Api.ManagerGift.Services
 
                                 if (transfer.Status == 99)
                                 {
-                                    transfer.Status = (int)ContextProvider.statusTransfer.Approve;
+                                    transfer.Status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve;
                                     transferlog.Status = (int)ContextProvider.statusTransfer.Approve;
                                     foreach (var itm in lstTransferDetail)
                                     {
@@ -772,7 +785,7 @@ namespace Api.ManagerGift.Services
 
                             case Constants.PARAM_DIEU_CHUYEN_NOI_BO:
 
-                                transfer.Status = (int)ContextProvider.statusTransfer.Approve;
+                                transfer.Status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve;
                                 ss.Save(transferlog);
 
                                 foreach (var itm in lstTransferDetail)

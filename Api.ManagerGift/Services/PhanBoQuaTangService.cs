@@ -42,16 +42,14 @@ namespace Api.ManagerGift.Services
                         s.NgayDuyet,
                         s.NumberOdEdit
                     }).Distinct().ToList();
-                    // .OrderBy(s => new { s.CreatedDate, s.Status })
-                    List<Guid> tranfersIds = tranfers.Select(s => s.Id).ToList();
-                    var detailTranfer = ss.Query<TransferDetail>().Where(p => tranfersIds.Contains(p.TransferGift.Id))
-                    .Select(s => new
+
+                    List<Guid> Ids = tranfers.Select(s => s.Id).ToList();
+                    if (ContextProvider.CheckPermission(userinfo.PermisionId) == 3)
                     {
-                        TransferId = s.TransferGift.Id,
-                        s.FlagDieuChuyen,
-                        s.GiftId,
-                        s.Amount
-                    }).Distinct().ToList();
+                        var tranfersIds = ss.Query<TransferDetail>().Where(p => Ids.Contains(p.TransferGift.Id) && p.ReceivingDepartment==userinfo.OrganizationId)
+                        .Select(s => s.TransferGift.Id).Distinct().ToList();
+                        tranfers = tranfers.Where(w => (tranfersIds.Contains(w.Id) && w.Status==2) || w.DepartmentId == userinfo.OrganizationId).ToList();
+                    }
                     if (organizationId != null)
                         tranfers = tranfers.Where(s => s.DepartmentId == new Guid(organizationId)).ToList();
 
@@ -133,7 +131,8 @@ namespace Api.ManagerGift.Services
                         var countAmount = ss.Query<TransferDetail>()
                                              .Where(s =>
                                                  s.GiftId == giftId &&
-                                                 s.ReceivingPromotion == _promotionId
+                                                 s.ReceivingPromotion == _promotionId &&
+                                                 s.TransferGift.Status != 2
                                              ).Select(p => p.Amount).ToList()
                                              .Sum();
                         var giftPhanBo = itm.chinhanh_pgd.Length * itm.Amount;
@@ -685,6 +684,8 @@ namespace Api.ManagerGift.Services
 
                         if (checkAmount)
                         {
+                            var promotion = ss.Get<Promotion>(promotionId);
+                            int numberOdEdit = promotion.NumberOdEdit + 1;
                             if (flag == Constants.DRAFT)
                             {
                                 status = (int)ContextProvider.statusTransfer.Draft;
@@ -693,6 +694,7 @@ namespace Api.ManagerGift.Services
                                            p.ProductId == product.Id &&
                                            p.PositionId == userinfo.Position.Id &&
                                            p.Name == Constants.TAO_NHAP);
+                                promotion.NumberOdEdit = numberOdEdit;
                                 result = Constants.LUU_THANH_CONG;
                             }
 
@@ -713,6 +715,7 @@ namespace Api.ManagerGift.Services
                                 Code = CreateTranferCode(product.Code),
                                 Product = product,
                                 IsFinished = false,
+                                NumberOdEdit = numberOdEdit,
                                 IsComplete = false, //lanh dao duyet => true
                                 DepartmentId = userinfo.Organization.Id,
                                 PromotionId = promotionId,
@@ -887,8 +890,10 @@ namespace Api.ManagerGift.Services
                         {
                             itm.Status = status;
                             itm.StageCurrent = stageCurrent;
-                            itm.CreatedBy = userinfo.OrganizationId;
-                            itm.CreatedDate = date;
+                            //itm.CreatedBy = userinfo.OrganizationId;
+                            itm.NguoiDuyet = userinfo.Id;
+                            itm.NgayDuyet = date;
+                            //itm.CreatedDate = date;
                             itm.UpdateDate = date;
 
                             var newTranferLog = new TransferGiftLog
@@ -1008,8 +1013,10 @@ namespace Api.ManagerGift.Services
                             {
                                 itm.Status = status;
                                 itm.StageCurrent = stageCurrent;
-                                itm.CreatedBy = userinfo.OrganizationId;
-                                itm.CreatedDate = date;
+                                //itm.CreatedBy = userinfo.OrganizationId;
+                                itm.NguoiDuyet = userinfo.Id;
+                                itm.NgayDuyet = date;
+                                //itm.CreatedDate = date;
                                 itm.UpdateDate = date;
 
                                 var newTranferLog = new TransferGiftLog
@@ -1062,6 +1069,7 @@ namespace Api.ManagerGift.Services
             Random random = new Random();
             return random.Next(min, max);
         }
+        
 
         private string RandomString(int size)
         {

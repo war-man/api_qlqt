@@ -16,6 +16,7 @@ namespace Api.ManagerGift.Entities
         public virtual int MaxGiftInDay { get; set; }
         public virtual bool IsChange { get; set; }
         public virtual Guid NguoiDuyet { get; set; }
-        public virtual DateTime? NgayDuyet { get; set; } 
+        public virtual DateTime? NgayDuyet { get; set; }
+        public virtual int SoLanHPB { get; set; }
     }
 }

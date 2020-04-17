@@ -48,7 +48,7 @@ namespace Api.ManagerGift.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IActionResult Get() => Ok(promotionsService.Get());
+        public IActionResult Get() => Ok(promotionsService.Get(HttpContext.User));
 
         /// <summary>
         /// lay danh sach qua tang ung voi chuong trinh khuyen mai.
@@ -56,7 +56,7 @@ namespace Api.ManagerGift.Controllers
         /// <param name="Id">id chuong trinh khuyen mai</param>
         /// <returns></returns>
         [HttpGet("{Id}")]
-        public IActionResult Get(string Id) => Ok(promotionsService.Get(new Guid(Id)));
+        public IActionResult Get(string Id) => Ok(promotionsService.Get(HttpContext.User,new Guid(Id)));
 
         /// <summary>
         /// get chi tiet chuong trinh khuyen mai.

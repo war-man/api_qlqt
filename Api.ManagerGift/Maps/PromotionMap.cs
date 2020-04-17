@@ -29,6 +29,7 @@ namespace Api.ManagerGift.Maps
             Map(p => p.MaxGiftWithCustomer);
             Map(p => p.MaxGiftInDay);
             Map(p => p.IsChange);
+            Map(p => p.SoLanHPB);
         }
     }
 }

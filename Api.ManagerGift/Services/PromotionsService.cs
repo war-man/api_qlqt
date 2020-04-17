@@ -324,9 +324,10 @@ namespace Api.ManagerGift.Services
         /// get danh sách promotion cho combobox.
         /// </summary>
         /// <returns>list promotion</returns>
-        public List<dynamic> Get()
+        public List<dynamic> Get(ClaimsPrincipal principal)
         {
             var lstResults = new List<dynamic>();
+            var user = ContextProvider.GetUserInfo(principal);
             SessionManager.DoWork(ss =>
             {
                 try
@@ -345,9 +346,15 @@ namespace Api.ManagerGift.Services
                                         p.Name,
                                         p.Status,
                                         p.NumberOdEdit,
-                                        value = p.Name,
-                                        label = p.Code
+                                        p.SoLanHPB,
+                                        value = p.Code,
+                                        label = p.Name
                                     }).ToList();
+                    if(ContextProvider.CheckPermission(user.PermisionId) == 3)
+                    {
+                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == user.OrganizationId).Select(s=>s.ReceivingPromotion).ToList();
+                        lstResults = lstResults.Where(w => ids.Contains(w.Id)).ToList();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -362,9 +369,10 @@ namespace Api.ManagerGift.Services
         /// </summary>
         /// <param name="Id">id chuong trình khuyến mãi</param>
         /// <returns></returns>
-        public List<dynamic> Get(Guid Id)
+        public List<dynamic> Get(ClaimsPrincipal principal,Guid Id)
         {
             var lstResults = new List<dynamic>();
+            var user = ContextProvider.GetUserInfo(principal);
             SessionManager.DoWork(ss =>
             {
                 try
@@ -386,7 +394,11 @@ namespace Api.ManagerGift.Services
                                       value = _gifts.Name,
                                       label = _gifts.Code
                                   }).ToList();
-
+                    if (ContextProvider.CheckPermission(user.PermisionId) == 3)
+                    {
+                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == user.OrganizationId).Select(s => s.GiftId).ToList();
+                        lstResults = lstResults.Where(w => ids.Contains(w.GiftId)).ToList();
+                    }
                     //lstResults = ss.Query<GiftPromotion>().Where(sp => sp.GiftPromotionId == Id)
                     //                .Select(p => (dynamic)new
                     //                {

@@ -17,6 +17,17 @@ namespace Api.ManagerGift.Sessions
             Approve,
             Refuse
         }
+        public static int CheckPermission(int value)
+        {
+            int result = 0;
+            if (value == 1)
+                result = 1;//Admin
+            else if (value == 2 || value == 3)
+                result = 2;//Quản Lý BH
+            else
+                result = 3;//CN
+            return result;
+        }
         public static string GetFullName(List<User> lstUser, Guid? Id)
         {
             if (Id != null)
