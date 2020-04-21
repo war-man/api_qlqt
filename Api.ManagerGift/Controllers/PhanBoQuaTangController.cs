@@ -32,7 +32,7 @@ namespace Api.ManagerGift.Controllers
         {
             //var _flagDieuChuyen = new Guid(flagDieuChuyen);
             var _tranferId = new Guid(TranferId);
-            return Ok(_PhanBoQuaTangService.DetailPhanBoQuaTang(_tranferId)); //_flagDieuChuyen));
+            return Ok(_PhanBoQuaTangService.DetailPhanBoQuaTang(HttpContext.User,_tranferId)); //_flagDieuChuyen));
         }
         [HttpPost("Update/{TranferId}")]
         public IActionResult UpdatePhanBoQuaTang([FromBody] List<TransferDetail> obj,string TranferId)
@@ -47,11 +47,12 @@ namespace Api.ManagerGift.Controllers
             return Ok(_PhanBoQuaTangService.GetBranch(_flagDieuChuyen, _idGift));
         }
 
-        [HttpGet("Duyet/{flagDieuChuyen}/{flag}")]
-        public IActionResult Duyet(string flagDieuChuyen, string flag)
+        [HttpGet("Duyet/{flagDieuChuyen}/{flag}/{id}")]
+        public IActionResult Duyet(string flagDieuChuyen, string flag, string id)
         {
             var _flagDieuChuyen = new Guid(flagDieuChuyen);
-            return Ok(_PhanBoQuaTangService.Duyet(_flagDieuChuyen, flag, HttpContext.User));
+            var _id = new Guid(id);
+            return Ok(_PhanBoQuaTangService.Duyet(_flagDieuChuyen, flag, _id, HttpContext.User));
         }
 
         // ================ Hoàn phân bổ quà tặng ==================//

@@ -19,6 +19,8 @@ namespace Api.ManagerGift.Services
             //int pageSize = 20;
             dynamic result = new ExpandoObject();
             var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+            var isLDCN_PGD = isTypeUser == 3 && userinfo.Position.IsLeader ? true : false;
             SessionManager.DoWork(ss =>
             {
                 try
@@ -44,11 +46,11 @@ namespace Api.ManagerGift.Services
                     }).Distinct().ToList();
 
                     List<Guid> Ids = tranfers.Select(s => s.Id).ToList();
-                    if (ContextProvider.CheckPermission(userinfo.PermisionId) == 3)
+                    if (isTypeUser == 3)
                     {
-                        var tranfersIds = ss.Query<TransferDetail>().Where(p => Ids.Contains(p.TransferGift.Id) && p.ReceivingDepartment==userinfo.OrganizationId)
+                        var tranfersIds = ss.Query<TransferDetail>().Where(p => Ids.Contains(p.TransferGift.Id) && p.ReceivingDepartment == userinfo.OrganizationId)
                         .Select(s => s.TransferGift.Id).Distinct().ToList();
-                        tranfers = tranfers.Where(w => (tranfersIds.Contains(w.Id) && w.Status==2) || w.DepartmentId == userinfo.OrganizationId).ToList();
+                        tranfers = tranfers.Where(w => (tranfersIds.Contains(w.Id) && w.Status == 2) || w.DepartmentId == userinfo.OrganizationId).ToList();
                     }
                     if (organizationId != null)
                         tranfers = tranfers.Where(s => s.DepartmentId == new Guid(organizationId)).ToList();
@@ -73,6 +75,7 @@ namespace Api.ManagerGift.Services
                                            _tranfers.Status,
                                            _tranfers.FlagDieuChuyen,
                                            CreatedBy = ContextProvider.GetFullName(lstUser, _tranfers.CreatedBy),
+                                           _tranfers.DepartmentId,
                                            CreatedDate = ContextProvider.GetConvertDatetime(_tranfers.CreatedDate),
                                            MaCTKM = _promotion.Code,
                                            TenCTKM = _promotion.Name,
@@ -83,6 +86,11 @@ namespace Api.ManagerGift.Services
                                            NgayDuyet = ContextProvider.GetConvertDatetime(_tranfers.NgayDuyet),
                                            OrderByCreateDate = _tranfers.CreatedDate
                                        }).ToList();//.OrderBy(s => s.Status).OrderBy(s => s.CreatedDate);
+                    if (isTypeUser == 2)
+                    {
+                        if (userinfo.Position.IsLeader)
+                            lstTranfers = lstTranfers.Where(w => (w.Status == 1 && w.DepartmentId == userinfo.OrganizationId) || w.Status == 4 || w.Status == 2).ToList();
+                    }
                     result.LstPhanBo = lstTranfers.OrderByDescending(od => od.OrderByCreateDate).Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
 
                     var total = lstTranfers.Count();
@@ -323,10 +331,12 @@ namespace Api.ManagerGift.Services
             }
             return result;
         }
-        public dynamic DetailPhanBoQuaTang(Guid _tranferId)//Guid flagDieuChuyen)
+        public dynamic DetailPhanBoQuaTang(ClaimsPrincipal principal,Guid _tranferId)//Guid flagDieuChuyen)
         {
             dynamic result = new ExpandoObject();
-            //var userinfo = ContextProvider.GetUserInfo(principal);
+            var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+            var isLDCN_PGD = isTypeUser == 3 && userinfo.Position.IsLeader ? true : false;
             SessionManager.DoWork(ss =>
             {
                 try
@@ -398,6 +408,9 @@ namespace Api.ManagerGift.Services
                                    MaCTKM = _promotion.Code,
                                    TenCTKM = _promotion.Name,
                                    DonViThucHien = ContextProvider.GetOrganizationName(lstOrgan, _tranfer.DepartmentId),
+                                   IsTypeUser = isTypeUser,//1-admin/2-QLBH/3-CN-PGD
+                                   IsLeader = userinfo.Position.IsLeader,
+                                   IsDep = userinfo.OrganizationId== _tranfer.DepartmentId
                                });
                     result.ThongTinChung = ttc.ToList();
                 }
@@ -433,7 +446,7 @@ namespace Api.ManagerGift.Services
             return result;
         }
 
-        public string Duyet(Guid flagDieuChuyen, string flag, ClaimsPrincipal principal)
+        public string Duyet(Guid flagDieuChuyen, string flag, Guid id, ClaimsPrincipal principal)
         {
             var result = string.Empty;
             SessionManager.DoWork((Action<NHibernate.ISession>)(ss =>
@@ -444,7 +457,7 @@ namespace Api.ManagerGift.Services
                     var product = ss.Get<Product>(_productId);
                     var userinfo = ContextProvider.GetUserInfo(principal);
                     var date = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture);
-                    var tranfer = ss.Query<TransferGift>().Where(p => p.FlagDieuChuyen == flagDieuChuyen).ToList();
+                    var tranfer = ss.Query<TransferGift>().Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.Id==id).ToList();
                     var promotionId = new Guid();
 
                     if (flag == Constants.REFUSE)
@@ -493,14 +506,14 @@ namespace Api.ManagerGift.Services
                         var checkAmount = false;
 
                         var tranferDetailDisTinct = ss.Query<TransferDetail>()
-                            .Where(p => p.FlagDieuChuyen == flagDieuChuyen)
+                            .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id==id)
                             .Select(s => new { s.ReceivingPromotion, s.Amount, s.GiftId }).Distinct().ToList();
 
                         foreach (var itm in tranferDetailDisTinct)
                         {
-                            var count = ss.Query<TransferDetail>()
-                                .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.GiftId == itm.GiftId).Count();
-                            var giftPhanBo = itm.Amount * count;
+                            //var count = ss.Query<TransferDetail>()
+                            //    .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id == id && p.GiftId == itm.GiftId && p.ReceivingDepartment== userinfo.OrganizationId).Count();
+                            var giftPhanBo = itm.Amount;// * count;
 
                             promotionId = tranferDetailDisTinct.FirstOrDefault().ReceivingPromotion.Value;
                             var amountInStore = ss.Query<Store>()
@@ -559,14 +572,14 @@ namespace Api.ManagerGift.Services
                                         // update store trong kho HO.
                                         var store = ss.Query<Store>()
                                             .Single(s => s.PromotionId == promotionId && s.GiftId == itm.GiftId && s.DepartmentId == userinfo.OrganizationId);
-                                        var count = ss.Query<TransferDetail>()
-                                            .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.GiftId == itm.GiftId).Count();
-                                        store.Amount -= itm.Amount * count;
+                                        //var count = ss.Query<TransferDetail>()
+                                        //    .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id == id && p.GiftId == itm.GiftId).Count();
+                                        store.Amount -= itm.Amount;// * count;
                                         store.UpdatedDate = date;
                                     }
 
                                     // update store chi nhánh, phòng giao dịch.
-                                    var tranferDetail = ss.Query<TransferDetail>().Where(s => s.FlagDieuChuyen == flagDieuChuyen).ToList();
+                                    var tranferDetail = ss.Query<TransferDetail>().Where(s => s.FlagDieuChuyen == flagDieuChuyen && s.TransferGift.Id == id).ToList();
                                     foreach (var itm in tranferDetail)
                                     {
                                         var updateStore = ss.Query<Store>().Where(s =>
@@ -642,6 +655,8 @@ namespace Api.ManagerGift.Services
         {
             var result = string.Empty;
             var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+            var isLDCN_PGD = isTypeUser == 3 && userinfo.Position.IsLeader ? true : false;
             var departmentId = userinfo.OrganizationId;
             var checkAmount = false;
             var _productId = new Guid(Constants.ID_PRODUCT_HOAN_PHAN_BO_QUA_TANG);
@@ -685,7 +700,8 @@ namespace Api.ManagerGift.Services
                         if (checkAmount)
                         {
                             var promotion = ss.Get<Promotion>(promotionId);
-                            int numberOdEdit = promotion.NumberOdEdit + 1;
+                            int numberOdEdit = promotion.SoLanHPB + 1;
+                            promotion.SoLanHPB = numberOdEdit;
                             if (flag == Constants.DRAFT)
                             {
                                 status = (int)ContextProvider.statusTransfer.Draft;
@@ -872,6 +888,8 @@ namespace Api.ManagerGift.Services
                     var _productId = new Guid(Constants.ID_PRODUCT_HOAN_PHAN_BO_QUA_TANG);
                     var product = ss.Get<Product>(_productId);
                     var userinfo = ContextProvider.GetUserInfo(principal);
+                    var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+                    var isLDCN_PGD = isTypeUser == 3 && userinfo.Position.IsLeader ? true : false;
                     var date = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture);
                     var tranfer = ss.Query<TransferGift>().Where(p => p.FlagDieuChuyen == flagDieuChuyen).ToList();
                     var promotionId = new Guid();
@@ -966,7 +984,7 @@ namespace Api.ManagerGift.Services
                                             p.PositionId == userinfo.Position.Id &&
                                             p.Name == Constants.DUYET).FirstOrDefault();
                                 stageCurrent = new Guid(Constants.ID_HOAN_PHAN_BO_DUYET);
-                                status = (int)ContextProvider.statusTransfer.Approve;
+                                status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve;
                                 result = Constants.DUYET_THANH_CONG;
 
                                 foreach (var itm in tranferDetailDisTinct)
@@ -1069,7 +1087,7 @@ namespace Api.ManagerGift.Services
             Random random = new Random();
             return random.Next(min, max);
         }
-        
+
 
         private string RandomString(int size)
         {

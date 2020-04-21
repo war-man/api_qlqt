@@ -27,7 +27,7 @@ namespace Api.ManagerGift.Services
                     var promotion = ss.Query<Promotion>().ToList();
                     var organization = ss.Query<Organization>().ToList();
 
-                    var tranfer = ss.Query<TransferGift>().Where(s => s.Status == 2 && s.CreatedDate <= _toDate && s.CreatedDate >= _fromDate).ToList();
+                    var tranfer = ss.Query<TransferGift>().Where(s => s.Status == 2 && s.CreatedDate <= _toDate.AddDays(1) && s.CreatedDate >= _fromDate).ToList();
 
                     if (productId != null)
                         tranfer = tranfer.Where(s => s.Product.Id == new Guid(productId)).ToList();
@@ -58,12 +58,12 @@ namespace Api.ManagerGift.Services
                                        Code = _gifts.Code,
                                        Name = _gifts.Name,
                                        UnitName = _gifts.Unit.Name,
-                                       Price = _gifts.Price.ToString(),
+                                       Price = _gifts.Price.ToString("f0"),
                                        GiftGroupId = _gifts.GiftGroup.Id.ToString(),
                                        GroupName = _gifts.GiftGroup.Name,
                                        OptionGiftId = _gifts.GiftGroup.OptionGift.Id.ToString(),
                                        OptionGiftName = _gifts.GiftGroup.OptionGift.Name
-                                   }).OrderBy(p => p.GiftGroupId).OrderBy(pp => pp.OptionGiftId);
+                                   }).OrderBy(pp => pp.OptionGiftName).OrderBy(p => p.GroupName).OrderBy(pp => pp.Name);
                     result = lstGift.ToList();
                 }
                 catch (Exception ex)
