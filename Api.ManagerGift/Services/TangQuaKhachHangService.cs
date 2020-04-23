@@ -72,7 +72,8 @@ namespace Api.ManagerGift.Services
                 SessionManager.DoWork(ss =>
                 {
                     var lstUser = ss.Query<User>().ToList();
-                    var timeNow = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture);
+                    var now = DateTime.Now;
+                    var timeNow = DateTime.ParseExact(new DateTime(now.Year, now.Month, now.Day, 0, 0, 0).ToString("yyyy-MM-dd hh:mm:ss tt"), "yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
                     var promotions = ss.Query<Promotion>().Where(s =>
                                                             s.StartDate <= timeNow
                                                         && s.FinishDate >= timeNow
@@ -83,6 +84,8 @@ namespace Api.ManagerGift.Services
                     }
                     else
                     {
+                        
+                        var status = false;
                         foreach (var itm in promotions)
                         {
                             var quaTangKH = new QuaTangKH();
@@ -91,6 +94,7 @@ namespace Api.ManagerGift.Services
                             cusGift = ss.Query<CustomerGift>().SingleOrDefault(s => s.Acctno == accNo && s.Promotion.Id == itm.Id && s.PhanHe == phanhe);
                             if (cusGift != null)
                             {
+                                status = true;
                                 lstCusGift.Add(cusGift);
 
                                 var gifts = ss.Query<Gift>().Where(s => s.Id == cusGift.Gift.Id).ToList();
@@ -106,13 +110,18 @@ namespace Api.ManagerGift.Services
                                 var promotionOut = new PromotionOut
                                 {
                                     Id = promotionIdUsed.ToString(),
+                                    Code = ContextProvider.GetPromotionCode(promotions, promotionIdUsed),
                                     Name = ContextProvider.GetPromotionName(promotions, promotionIdUsed),
+                                    label = ContextProvider.GetPromotionCode(promotions, promotionIdUsed),
+                                    value = promotionIdUsed.ToString(),
                                     FlagTangQua = cusGift.Status,
                                     QuaTangKH = lstQuaTangKH
                                 };
                                 lstPromotion.Add(promotionOut);
                             }
-
+                            var idGP = promotions.Select(s => s.GiftPromotionId).ToList();
+                            var giftIds = ss.Query<GiftPromotion>().Where(s => idGP.Contains(s.GiftPromotionId)).Select(s => s.GiftId).ToList();
+                            var gift = ss.Query<Gift>().Where(s => giftIds.Contains(s.Id)).ToList();
                             if (promotionIdUsed.ToString() != Constants.GUIDE_TYPE_NULL)
                             {
                                 if (itm.Id != promotionIdUsed)
@@ -136,7 +145,7 @@ namespace Api.ManagerGift.Services
                                                 result.MesError = "Chưa thiết lập nguyên tắc tặng quà.";
 
                                             else
-                                                lstQuaTangKH = CreateLstGift(dataGift, infoCusFromCoreBanking);
+                                                lstQuaTangKH = CreateLstGift(dataGift, gift, infoCusFromCoreBanking);
                                         }
                                     }
                                     if (lstQuaTangKH.Count > 0)
@@ -165,7 +174,7 @@ namespace Api.ManagerGift.Services
                                             result.MesError = "Chưa thiết lập nguyên tắc tặng quà.";
 
                                         else
-                                            lstQuaTangKH = CreateLstGift(dataGift, infoCusFromCoreBanking);
+                                            lstQuaTangKH = CreateLstGift(dataGift, gift, infoCusFromCoreBanking);
                                     }
                                 }
                                 if (lstQuaTangKH.Count > 0)
@@ -177,7 +186,8 @@ namespace Api.ManagerGift.Services
 
                         result.InfoCus = LstCustomer(lstCusGift, phanhe, lstUser);
 
-                        result.LstPromotion = lstPromotion;
+                        result.LstPromotion = lstPromotion.ToList().OrderByDescending(o=>o.CountPrice).ToList();
+                        result.Status = status;
                     }
                 });
             }
@@ -208,8 +218,8 @@ namespace Api.ManagerGift.Services
                     {
                         if (CheckMaxGiftWithCustomer(promotion.MaxGiftWithCustomer, _promotionId, obj.Acctno, soluong))
                         {
-                            var amount = ss.Query<Store>().SingleOrDefault(s => s.DepartmentId == userinfo.OrganizationId && s.PromotionId == _promotionId && s.GiftId == _giftId).Amount;
-                            if (amount >= soluong)
+                            var store = ss.Query<Store>().FirstOrDefault(s => s.DepartmentId == userinfo.OrganizationId && s.PromotionId == _promotionId && s.GiftId == _giftId);
+                            if (store != null && store.Amount >= soluong)
                             {
                                 newCus.Id = new Guid();
                                 newCus.USERID = userinfo.Id;
@@ -409,14 +419,21 @@ namespace Api.ManagerGift.Services
                             p.TERMCD,
                             p.TENLOAIHINH,
                             p.BALANCE,
+                            p.PhanHe,
                             p.CCYCD,
                             p.FRDATE,
                             p.TODATE,
                             PromotionName = p.Promotion.Name,
+                            PromotionCode = p.Promotion.Code,
                             GiftName = p.Gift.Name,
+                            GiftCode = p.Gift.Code,
+                            UnitName = p.Gift.Unit.Name,
+                            Price = p.Gift.Price,
+                            TotalPrice =(p.Gift.Price * p.NumGift),
                             p.NumGift,
-                            p.CREATEDDATE,
-                            CREATEDBy = ContextProvider.GetFullName(lstUser, p.CREATEDBy),
+                            CreatedDate = p.CREATEDDATE,
+                            CreatedBy = ContextProvider.GetFullName(lstUser, p.CREATEDBy),
+                            DonViTang = ContextProvider.GetDonViTang(lstUser, p.CREATEDBy),
                             p.NgayDuyet,
                             NguoiDuyet = ContextProvider.GetFullName(lstUser, p.NguoiDuyet),
                             p.Status
@@ -548,11 +565,15 @@ namespace Api.ManagerGift.Services
                 Id = itm.Id.ToString(),
                 Name = itm.Name,
                 FlagTangQua = 0,
-                QuaTangKH = lstQuaTangKH
+                QuaTangKH = lstQuaTangKH,
+                CountPrice = lstQuaTangKH.Sum(s=>s.Price),
+                Code = itm.Code,
+                label = itm.Code,
+                value = itm.Id.ToString(),
             };
             return i;
         }
-        private List<QuaTangKH> CreateLstGift(List<DataKhaiBaoQuaTang> dataGift, CustomerGift infoCusFromCoreBanking)
+        private List<QuaTangKH> CreateLstGift(List<DataKhaiBaoQuaTang> dataGift, List<Gift> gifts, CustomerGift infoCusFromCoreBanking)
         {
             var lstQuaTangKH = new List<QuaTangKH>();
             foreach (var itmGift in dataGift)
@@ -564,23 +585,29 @@ namespace Api.ManagerGift.Services
 
                 if (infoCusFromCoreBanking.BALANCE >= minsotien && infoCusFromCoreBanking.TERM >= minkyhan)
                 {
+                    var newGift = NewGift(itmGift);
+                    var gift = gifts.FirstOrDefault(f=>f.Id== Guid.Parse(newGift.GiftId));
+                    newGift.UnitName = gift.Unit.Name;
+                    newGift.GiftCode = gift.Code;
+                    newGift.Price = gift.Price;
+                    newGift.TotalPrice = gift.Price * newGift.Num;
                     if (maxsotien == 0 && maxkyhan == 0)
-                        lstQuaTangKH.Add(NewGift(itmGift));
+                        lstQuaTangKH.Add(newGift);
 
                     else if (maxsotien != 0 && maxkyhan == 0)
                     {
                         if (infoCusFromCoreBanking.BALANCE <= maxsotien)
-                            lstQuaTangKH.Add(NewGift(itmGift));
+                            lstQuaTangKH.Add(newGift);
                     }
                     else if (maxsotien == 0 && maxkyhan != 0)
                     {
                         if (infoCusFromCoreBanking.TERM <= maxkyhan)
-                            lstQuaTangKH.Add(NewGift(itmGift));
+                            lstQuaTangKH.Add(newGift);
                     }
                     else
                     {
                         if (infoCusFromCoreBanking.BALANCE <= maxsotien && infoCusFromCoreBanking.TERM <= maxkyhan)
-                            lstQuaTangKH.Add(NewGift(itmGift));
+                            lstQuaTangKH.Add(newGift);
                     }
                 }
             }
@@ -639,14 +666,22 @@ namespace Api.ManagerGift.Services
     public class QuaTangKH
     {
         public string GiftId { get; set; }
+        public string GiftCode { get; set; }
         public string GiftName { get; set; }
         public int Num { get; set; }
+        public string UnitName { get; set; }
+        public decimal Price { get; set; }
+        public decimal TotalPrice { get; set; }
     }
 
     public class PromotionOut
     {
         public string Id { get; set; }
         public string Name { get; set; }
+        public string Code { get; set; }
+        public string value { get; set; }
+        public string label { get; set; }
+        public decimal CountPrice { get; set; }
         public int FlagTangQua { get; set; } // 0: chưa tặng, 1: đã chuyển cho lãnh đạo duyệt tặng quà.
         public List<QuaTangKH> QuaTangKH { get; set; }
     }

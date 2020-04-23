@@ -19,6 +19,7 @@ namespace Api.ManagerGift.Maps
             Map(p => p.GiftId);
             Map(p => p.Amount);
             Map(p => p.FlagDieuChuyen);
+            Map(p => p.TransferDepartment);
         }
     }
 }

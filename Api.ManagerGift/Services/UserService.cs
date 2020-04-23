@@ -186,21 +186,21 @@ namespace Api.ManagerGift.Services
             {
                 try
                 {
-                    if (ss.Query<Gift>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                    if (ss.Query<Gift>().FirstOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
                         result = true;
-                    else if (ss.Query<GiftGroup>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                    else if (ss.Query<GiftGroup>().FirstOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
                         result = true;
-                    else if (ss.Query<OptionGift>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                    else if (ss.Query<OptionGift>().FirstOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
                         result = true;
-                    else if (ss.Query<OptionGift>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                    else if (ss.Query<OptionGift>().FirstOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
                         result = true;
-                    else if (ss.Query<Promotion>().SingleOrDefault(p => p.CreatedBy == id || p.NguoiDuyet == id) != null)
+                    else if (ss.Query<Promotion>().FirstOrDefault(p => p.CreatedBy == id || p.NguoiDuyet == id) != null)
                         result = true;
-                    else if (ss.Query<TransferGift>().SingleOrDefault(p => p.CreatedBy == id || p.NguoiDuyet == id) != null)
+                    else if (ss.Query<TransferGift>().FirstOrDefault(p => p.CreatedBy == id || p.NguoiDuyet == id) != null)
                         result = true;
-                    else if (ss.Query<TransferUserLog>().SingleOrDefault(p => p.UserTransfer == id) != null)
+                    else if (ss.Query<TransferUserLog>().FirstOrDefault(p => p.UserTransfer == id) != null)
                         result = true;
-                    else if (ss.Query<Unit>().SingleOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
+                    else if (ss.Query<Unit>().FirstOrDefault(p => p.CreatedBy == id || p.UpdatedBy == id) != null)
                         result = true;
                     else
                         result = false;

@@ -53,6 +53,7 @@
         public const string INITIALIZE = "INITIALIZE";
         public const string REFUSE = "REFUSE";
         public const string APPROVE = "APPROVE";
+        public const string APPROVECN = "APPROVECN";
 
     }
 }

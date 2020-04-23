@@ -15,7 +15,8 @@ namespace Api.ManagerGift.Sessions
             Draft,
             Initialize,
             Approve,
-            Refuse
+            Refuse,
+            ApproveCN
         }
         public static int CheckPermission(int value)
         {
@@ -32,6 +33,13 @@ namespace Api.ManagerGift.Sessions
         {
             if (Id != null)
                 return lstUser.SingleOrDefault(p => p.Id == Id)?.FullName ?? "";
+            else
+                return "";
+        }
+        public static string GetDonViTang(List<User> lstUser, Guid? Id)
+        {
+            if (Id != null)
+                return lstUser.FirstOrDefault(p => p.Id == Id)?.Organization.Name ?? "";
             else
                 return "";
         }
@@ -56,6 +64,13 @@ namespace Api.ManagerGift.Sessions
         {
             if (Id != null)
                 return lst.SingleOrDefault(p => p.Id == Id)?.Name ?? "";
+            else
+                return "";
+        }
+        public static string GetPromotionCode(List<Promotion> lst, Guid? Id)
+        {
+            if (Id != null)
+                return lst.SingleOrDefault(p => p.Id == Id)?.Code ?? "";
             else
                 return "";
         }

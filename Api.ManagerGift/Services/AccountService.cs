@@ -232,7 +232,7 @@ namespace Api.ManagerGift.Services
                 //Kiem tra pass moi co trung pass cu hay khong
                 IsPassDif = userLogPass.Any(a => a.Password == Entities.User.ChangeSha512(passNew));
                 //Neu ko trung 
-                if (IsPassDif)
+                if (!IsPassDif)
                 {
                     //userLogPass theo user dang nhap = 3 thi xoa log xa nhat
                     if (userLogPass.Count > 2)

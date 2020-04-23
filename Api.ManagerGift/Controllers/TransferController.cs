@@ -26,7 +26,7 @@ namespace Api.ManagerGift.Controllers
         [HttpGet("TransDetail/{id}")]
         public IActionResult GetDetail(Guid id)
         {
-            return Ok(_transferService.GetDetailTranfer(id));
+            return Ok(_transferService.GetDetailTranfer(HttpContext.User, id));
         }
 
         [HttpPost("InitTransfer/{productId}/{flag}")]

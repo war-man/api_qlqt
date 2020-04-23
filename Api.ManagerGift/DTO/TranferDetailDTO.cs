@@ -21,6 +21,7 @@ namespace Api.ManagerGift.DTO
         //public string UnitName { get; set; }
         //public string Amount { get; set; }
         public Guid ReceiveDepartment { get; set; }
+        public Guid TransferDepartment { get; set; }
         public Guid StageId { get; set; }
         public DetailGiftTranfer DetailGiftTranfer { get; set; }
     }

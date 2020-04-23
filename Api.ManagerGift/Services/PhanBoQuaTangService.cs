@@ -50,7 +50,7 @@ namespace Api.ManagerGift.Services
                     {
                         var tranfersIds = ss.Query<TransferDetail>().Where(p => Ids.Contains(p.TransferGift.Id) && p.ReceivingDepartment == userinfo.OrganizationId)
                         .Select(s => s.TransferGift.Id).Distinct().ToList();
-                        tranfers = tranfers.Where(w => (tranfersIds.Contains(w.Id) && w.Status == 2) || w.DepartmentId == userinfo.OrganizationId).ToList();
+                        tranfers = tranfers.Where(w => (tranfersIds.Contains(w.Id) && (w.Status == 2 || w.Status == 99)) || w.DepartmentId == userinfo.OrganizationId).ToList();
                     }
                     if (organizationId != null)
                         tranfers = tranfers.Where(s => s.DepartmentId == new Guid(organizationId)).ToList();
@@ -89,7 +89,7 @@ namespace Api.ManagerGift.Services
                     if (isTypeUser == 2)
                     {
                         if (userinfo.Position.IsLeader)
-                            lstTranfers = lstTranfers.Where(w => (w.Status == 1 && w.DepartmentId == userinfo.OrganizationId) || w.Status == 4 || w.Status == 2).ToList();
+                            lstTranfers = lstTranfers.Where(w => (w.Status == 1 && w.DepartmentId == userinfo.OrganizationId) || w.Status == 4 || w.Status == 2 || w.Status == 99).ToList();
                     }
                     result.LstPhanBo = lstTranfers.OrderByDescending(od => od.OrderByCreateDate).Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
 
@@ -331,7 +331,7 @@ namespace Api.ManagerGift.Services
             }
             return result;
         }
-        public dynamic DetailPhanBoQuaTang(ClaimsPrincipal principal,Guid _tranferId)//Guid flagDieuChuyen)
+        public dynamic DetailPhanBoQuaTang(ClaimsPrincipal principal, Guid _tranferId)//Guid flagDieuChuyen)
         {
             dynamic result = new ExpandoObject();
             var userinfo = ContextProvider.GetUserInfo(principal);
@@ -410,9 +410,10 @@ namespace Api.ManagerGift.Services
                                    DonViThucHien = ContextProvider.GetOrganizationName(lstOrgan, _tranfer.DepartmentId),
                                    IsTypeUser = isTypeUser,//1-admin/2-QLBH/3-CN-PGD
                                    IsLeader = userinfo.Position.IsLeader,
-                                   IsDep = userinfo.OrganizationId== _tranfer.DepartmentId
+                                   IsDep = userinfo.OrganizationId == _tranfer.DepartmentId
                                });
                     result.ThongTinChung = ttc.ToList();
+                    result.AssignTransfer = ss.Query<TransferGiftLog>().Any(a => a.TransferGift.Id == _tranferId && a.AssignUserId == userinfo.Id && a.Status != 3);
                 }
                 catch (Exception ex)
                 {
@@ -457,7 +458,7 @@ namespace Api.ManagerGift.Services
                     var product = ss.Get<Product>(_productId);
                     var userinfo = ContextProvider.GetUserInfo(principal);
                     var date = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture);
-                    var tranfer = ss.Query<TransferGift>().Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.Id==id).ToList();
+                    var itm = ss.Query<TransferGift>().FirstOrDefault(p => p.FlagDieuChuyen == flagDieuChuyen && p.Id == id);
                     var promotionId = new Guid();
 
                     if (flag == Constants.REFUSE)
@@ -471,30 +472,30 @@ namespace Api.ManagerGift.Services
                             var status = (int)ContextProvider.statusTransfer.Refuse;
                             result = Constants.TU_CHOI_DUYET_THANH_CONG;
 
-                            foreach (var itm in tranfer)
-                            {
-                                itm.Status = status;
-                                itm.StageCurrent = stage.Id;
-                                itm.NguoiDuyet = userinfo.Id;
-                                itm.NgayDuyet = date;
-                                itm.UpdateDate = date;
+                            //foreach (var itm in tranfer)
+                            // {
+                            itm.Status = status;
+                            itm.StageCurrent = stage.Id;
+                            itm.NguoiDuyet = userinfo.Id;
+                            itm.NgayDuyet = date;
+                            itm.UpdateDate = date;
 
-                                var newTranferLog = new TransferGiftLog
-                                {
-                                    Id = Guid.NewGuid(),
-                                    TransferGift = itm,
-                                    AssignUserId = userinfo.Id,
-                                    AssignDeaprtmentId = userinfo.Organization.Id,
-                                    Comment = null,
-                                    Data = null,
-                                    Status = status,
-                                    UpdateDate = date,
-                                    Stage = stage,
-                                    Dealine = null,
-                                    FlagDieuChuyen = flagDieuChuyen
-                                };
-                                ss.Save(newTranferLog);
-                            }
+                            var newTranferLog = new TransferGiftLog
+                            {
+                                Id = Guid.NewGuid(),
+                                TransferGift = itm,
+                                AssignUserId = userinfo.Id,
+                                AssignDeaprtmentId = userinfo.Organization.Id,
+                                Comment = null,
+                                Data = null,
+                                Status = status,
+                                UpdateDate = date,
+                                Stage = stage,
+                                Dealine = null,
+                                FlagDieuChuyen = flagDieuChuyen
+                            };
+                            ss.Save(newTranferLog);
+                            //}
                         }
                         else
                             result = Constants.CHUC_NANG_LANH_DAO;
@@ -506,27 +507,27 @@ namespace Api.ManagerGift.Services
                         var checkAmount = false;
 
                         var tranferDetailDisTinct = ss.Query<TransferDetail>()
-                            .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id==id)
+                            .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id == id)
                             .Select(s => new { s.ReceivingPromotion, s.Amount, s.GiftId }).Distinct().ToList();
 
-                        foreach (var itm in tranferDetailDisTinct)
+                        foreach (var item in tranferDetailDisTinct)
                         {
                             //var count = ss.Query<TransferDetail>()
                             //    .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id == id && p.GiftId == itm.GiftId && p.ReceivingDepartment== userinfo.OrganizationId).Count();
-                            var giftPhanBo = itm.Amount;// * count;
+                            var giftPhanBo = item.Amount;// * count;
 
                             promotionId = tranferDetailDisTinct.FirstOrDefault().ReceivingPromotion.Value;
                             var amountInStore = ss.Query<Store>()
-                                .Where(s => s.PromotionId == promotionId && s.DepartmentId == userinfo.OrganizationId && s.GiftId == itm.GiftId)
-                                .FirstOrDefault().Amount;
+                                .Where(s => s.PromotionId == promotionId && s.DepartmentId == userinfo.OrganizationId && s.GiftId == item.GiftId)
+                                .FirstOrDefault()?.Amount;
                             var countAmount = ss.Query<TransferDetail>()
                                             .Where(s =>
-                                                s.GiftId == itm.GiftId &&
+                                                s.GiftId == item.GiftId &&
                                                 s.ReceivingDepartment == userinfo.Organization.Id &&
-                                                s.ReceivingPromotion == promotionId
+                                                s.ReceivingPromotion == promotionId && s.FlagDieuChuyen == flagDieuChuyen
                                             ).Select(p => p.Amount).ToList()
                                             .Sum();
-                            if (giftPhanBo <= (amountInStore - countAmount))
+                            if (giftPhanBo <= (amountInStore - countAmount) || itm.Status == 99)
                                 checkAmount = true;
 
                             else
@@ -541,6 +542,7 @@ namespace Api.ManagerGift.Services
                             var stage = new Stage();
                             var status = 99;
 
+                            var newTranferLog = new TransferGiftLog();
                             if (flag == Constants.INITIALIZE)
                             {
                                 stage = ss.Query<Stage>().SingleOrDefault(p =>
@@ -551,78 +553,7 @@ namespace Api.ManagerGift.Services
                                 {
                                     status = (int)ContextProvider.statusTransfer.Initialize;
                                     result = Constants.GUI_DUYET_THANH_CONG;
-                                }
-                                else
-                                    result = Constants.CHUC_NANG_NHAN_VIEN;
-                            }
-
-                            if (flag == Constants.APPROVE)
-                            {
-                                stage = ss.Query<Stage>().SingleOrDefault(p =>
-                                            p.ProductId == product.Id &&
-                                            p.PositionId == userinfo.Position.Id &&
-                                            p.Name == Constants.DUYET);
-                                if (stage != null)
-                                {
-                                    status = (int)ContextProvider.statusTransfer.Approve;
-                                    result = Constants.DUYET_THANH_CONG;
-
-                                    foreach (var itm in tranferDetailDisTinct)
-                                    {
-                                        // update store trong kho HO.
-                                        var store = ss.Query<Store>()
-                                            .Single(s => s.PromotionId == promotionId && s.GiftId == itm.GiftId && s.DepartmentId == userinfo.OrganizationId);
-                                        //var count = ss.Query<TransferDetail>()
-                                        //    .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id == id && p.GiftId == itm.GiftId).Count();
-                                        store.Amount -= itm.Amount;// * count;
-                                        store.UpdatedDate = date;
-                                    }
-
-                                    // update store chi nhánh, phòng giao dịch.
-                                    var tranferDetail = ss.Query<TransferDetail>().Where(s => s.FlagDieuChuyen == flagDieuChuyen && s.TransferGift.Id == id).ToList();
-                                    foreach (var itm in tranferDetail)
-                                    {
-                                        var updateStore = ss.Query<Store>().Where(s =>
-                                            s.DepartmentId == itm.ReceivingDepartment &&
-                                            s.PromotionId == itm.ReceivingPromotion &&
-                                            s.GiftId == itm.GiftId).FirstOrDefault();
-
-                                        if (updateStore != null)
-                                        {
-                                            updateStore.Amount += itm.Amount;
-                                            updateStore.UpdatedDate = date;
-                                        }
-
-                                        else
-                                        {
-                                            var newStore = new Store
-                                            {
-                                                Id = new Guid(),
-                                                DepartmentId = itm.ReceivingDepartment.Value,
-                                                PromotionId = itm.ReceivingPromotion,
-                                                GiftId = itm.GiftId,
-                                                Amount = itm.Amount,
-                                                UpdatedDate = date
-                                            };
-                                            ss.Save(newStore);
-                                        }
-                                    }
-                                }
-                                else
-                                    result = Constants.CHUC_NANG_LANH_DAO;
-                            }
-
-                            if (stage != null)
-                            {
-                                foreach (var itm in tranfer)
-                                {
-                                    itm.Status = status;
-                                    itm.StageCurrent = stage.Id;
-                                    itm.NguoiDuyet = userinfo.Id;
-                                    itm.NgayDuyet = date;
-                                    itm.UpdateDate = date;
-
-                                    var newTranferLog = new TransferGiftLog
+                                    newTranferLog = new TransferGiftLog
                                     {
                                         Id = Guid.NewGuid(),
                                         TransferGift = itm,
@@ -636,9 +567,123 @@ namespace Api.ManagerGift.Services
                                         Dealine = null,
                                         FlagDieuChuyen = flagDieuChuyen
                                     };
+                                    itm.Status = status;
+                                    itm.StageCurrent = stage.Id;
+                                    itm.NguoiDuyet = null;
+                                    itm.NgayDuyet = null;
+                                    itm.UpdateDate = date;
+                                    newTranferLog.Status = status;
                                     ss.Save(newTranferLog);
                                 }
+                                else
+                                    result = Constants.CHUC_NANG_NHAN_VIEN;
                             }
+                            if (flag == Constants.APPROVE)
+                            {
+                                stage = ss.Query<Stage>().SingleOrDefault(p =>
+                                            p.ProductId == product.Id &&
+                                            p.PositionId == userinfo.Position.Id &&
+                                            p.Name == Constants.DUYET);
+
+                                result = Constants.DUYET_THANH_CONG;
+                                newTranferLog = new TransferGiftLog
+                                {
+                                    Id = Guid.NewGuid(),
+                                    TransferGift = itm,
+                                    AssignUserId = userinfo.Id,
+                                    AssignDeaprtmentId = userinfo.Organization.Id,
+                                    Comment = null,
+                                    Data = null,
+                                    Status = status,
+                                    UpdateDate = date,
+                                    Stage = stage,
+                                    Dealine = null,
+                                    FlagDieuChuyen = flagDieuChuyen
+                                };
+                                if (itm.Status == 99)//Dang tai LDHO
+                                {
+                                    if (stage != null)
+                                    {
+                                        //status = (int)ContextProvider.statusTransfer.Approve;
+
+                                        foreach (var item in tranferDetailDisTinct)
+                                        {
+                                            // update store trong kho HO.
+                                            var store = ss.Query<Store>()
+                                                .FirstOrDefault(s => s.PromotionId == promotionId && s.GiftId == item.GiftId && s.DepartmentId == itm.DepartmentId);
+                                            //var count = ss.Query<TransferDetail>()
+                                            //    .Where(p => p.FlagDieuChuyen == flagDieuChuyen && p.TransferGift.Id == id && p.GiftId == itm.GiftId).Count();
+                                            store.Amount -= item.Amount;// * count;
+                                            store.UpdatedDate = date;
+                                        }
+
+                                        // update store chi nhánh, phòng giao dịch.
+                                        var tranferDetail = ss.Query<TransferDetail>().Where(s => s.FlagDieuChuyen == flagDieuChuyen && s.TransferGift.Id == id).ToList();
+                                        foreach (var item in tranferDetail)
+                                        {
+                                            var updateStore = ss.Query<Store>().Where(s =>
+                                                s.DepartmentId == item.ReceivingDepartment &&
+                                                s.PromotionId == item.ReceivingPromotion &&
+                                                s.GiftId == item.GiftId).FirstOrDefault();
+
+                                            if (updateStore != null)
+                                            {
+                                                updateStore.Amount += item.Amount;
+                                                updateStore.UpdatedDate = date;
+                                            }
+
+                                            else
+                                            {
+                                                var newStore = new Store
+                                                {
+                                                    Id = new Guid(),
+                                                    DepartmentId = item.ReceivingDepartment.Value,
+                                                    PromotionId = item.ReceivingPromotion,
+                                                    GiftId = item.GiftId,
+                                                    Amount = item.Amount,
+                                                    UpdatedDate = date
+                                                };
+                                                ss.Save(newStore);
+                                            }
+                                        }
+
+                                        itm.Status = (int)ContextProvider.statusTransfer.Approve;
+                                        itm.StageCurrent = stage.Id;
+                                        itm.NguoiDuyet = userinfo.Id;
+                                        itm.NgayDuyet = date;
+                                        itm.UpdateDate = date;
+
+                                        newTranferLog.Status = 2;
+                                        ss.Save(newTranferLog);
+                                    }
+                                    else
+                                        result = Constants.CHUC_NANG_LANH_DAO;
+
+                                }
+                                else if (itm.Status == 1)
+                                {
+                                    itm.Status = 99;
+                                    newTranferLog.Status = 99;
+                                    ss.Save(newTranferLog);
+                                }
+                                else
+                                    result = Constants.CHUC_NANG_LANH_DAO;
+                            }
+
+                            //if (stage != null)
+                            //{
+                            //    //foreach (var itm in tranfer)
+                            //    //{
+                            //    itm.Status = status;
+                            //    itm.StageCurrent = stage.Id;
+                            //    itm.NguoiDuyet = userinfo.Id;
+                            //    itm.NgayDuyet = date;
+                            //    itm.UpdateDate = date;
+
+                            //    newTranferLog.Status = 2;
+                            //    ss.Save(newTranferLog);
+                            //}
+                            //}
                         }
                     }
                 }
@@ -685,14 +730,22 @@ namespace Api.ManagerGift.Services
                             var amount = ss.Query<Store>()
                                             .Single(s => s.DepartmentId == departmentId && s.GiftId == giftId && s.PromotionId == promotionId
                                             ).Amount;
-                            if (itm.Amount < amount)
+                            var countAmount = ss.Query<TransferDetail>()
+                                            .Where(s =>
+                                                s.GiftId == giftId &&
+                                                s.ReceivingDepartment == userinfo.Organization.Id &&
+                                                s.ReceivingPromotion == promotionId &&
+                                                s.TransferGift.Product.Id == Guid.Parse(Constants.ID_PRODUCT_HOAN_PHAN_BO_QUA_TANG)
+                                            ).Select(p => p.Amount).ToList()
+                                            .Sum();
+                            if (itm.Amount <= (amount - countAmount))
                             {
                                 checkAmount = true;
                             }
                             else
                             {
                                 checkAmount = false;
-                                result = $"{itm.NameGift} Trong kho còn {amount} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
+                                result = $"{itm.NameGift} Trong kho còn {amount - countAmount} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
                                 break;
                             }
                         }
@@ -717,6 +770,10 @@ namespace Api.ManagerGift.Services
                             if (flag == Constants.INITIALIZE)
                             {
                                 status = (int)ContextProvider.statusTransfer.Initialize;
+                                if (isTypeUser == 3)
+                                {
+                                    status = 97;
+                                }
                                 stageCurrent = new Guid(Constants.ID_HOAN_PHAN_BO_GUI_DUYET);
                                 stage = ss.Query<Stage>().Single(p =>
                                             p.ProductId == product.Id &&
@@ -724,7 +781,6 @@ namespace Api.ManagerGift.Services
                                             p.Name == Constants.GUI_DUYET);
                                 result = Constants.GUI_DUYET_THANH_CONG;
                             }
-
                             var newTransfer = new TransferGift
                             {
                                 Id = Guid.NewGuid(),
@@ -769,7 +825,7 @@ namespace Api.ManagerGift.Services
                                     GiftId = new Guid(itm.GiftId),
                                     Amount = itm.Amount,
                                     TransferGift = newTransfer,
-                                    ReceivingDepartment = new Guid(Constants.ID_PHONG_QUAN_LY_BAN_HANG),
+                                    ReceivingDepartment = userinfo.Organization.Id,//new Guid(Constants.ID_PHONG_QUAN_LY_BAN_HANG),
                                     ReceivingPromotion = promotionId,
                                     FlagDieuChuyen = flagDieuChuyen
                                 };
@@ -965,7 +1021,6 @@ namespace Api.ManagerGift.Services
                             var stageCurrent = new Guid();
                             var stage = new Stage();
                             var status = 99;
-
                             if (flag == Constants.INITIALIZE)
                             {
                                 stage = ss.Query<Stage>().Where((System.Linq.Expressions.Expression<Func<Stage, bool>>)(p =>
@@ -973,8 +1028,9 @@ namespace Api.ManagerGift.Services
                                             p.PositionId == userinfo.Position.Id &&
                                             p.Name == Constants.GUI_DUYET)).FirstOrDefault();
                                 stageCurrent = new Guid(Constants.ID_HOAN_PHAN_BO_GUI_DUYET);
-                                status = (int)ContextProvider.statusTransfer.Initialize;
+                                status = 97;// (int)ContextProvider.statusTransfer.Initialize;
                                 result = Constants.GUI_DUYET_THANH_CONG;
+                                saveDataHPB(ss, tranfer, userinfo, status, date, stage, stageCurrent, flagDieuChuyen);
                             }
 
                             if (flag == Constants.APPROVE)
@@ -984,74 +1040,52 @@ namespace Api.ManagerGift.Services
                                             p.PositionId == userinfo.Position.Id &&
                                             p.Name == Constants.DUYET).FirstOrDefault();
                                 stageCurrent = new Guid(Constants.ID_HOAN_PHAN_BO_DUYET);
-                                status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve;
+                                status = isLDCN_PGD ? (int)ContextProvider.statusTransfer.ApproveCN : (int)ContextProvider.statusTransfer.Approve;
                                 result = Constants.DUYET_THANH_CONG;
 
-                                foreach (var itm in tranferDetailDisTinct)
+                                if (tranfer.FirstOrDefault().Status == 4)
                                 {
-                                    // update store chi nhánh, phòng giao dịch
-                                    var store = ss.Query<Store>()
-                                        .Single(s => s.PromotionId == promotionId && s.GiftId == itm.GiftId && s.DepartmentId == userinfo.OrganizationId);
-                                    store.Amount -= itm.Amount;
-                                    store.UpdatedDate = date;
-                                }
-
-                                // update store HO.
-                                var tranferDetail = ss.Query<TransferDetail>().Where(s => s.FlagDieuChuyen == flagDieuChuyen).ToList();
-                                foreach (var itm in tranferDetail)
-                                {
-                                    var updateStore = ss.Query<Store>().Where(s =>
-                                        s.DepartmentId == itm.ReceivingDepartment &&
-                                        s.PromotionId == itm.ReceivingPromotion &&
-                                        s.GiftId == itm.GiftId).FirstOrDefault();
-
-                                    if (updateStore != null)
+                                    foreach (var itm in tranferDetailDisTinct)
                                     {
-                                        updateStore.Amount += itm.Amount;
-                                        updateStore.UpdatedDate = date;
+                                        // update store chi nhánh, phòng giao dịch
+                                        var store = ss.Query<Store>()
+                                            .Single(s => s.PromotionId == promotionId && s.GiftId == itm.GiftId && s.DepartmentId == userinfo.OrganizationId);
+                                        store.Amount += itm.Amount;
+                                        store.UpdatedDate = date;
                                     }
 
-                                    //else
-                                    //{
-                                    //    var newStore = new Store
-                                    //    {
-                                    //        Id = new Guid(),
-                                    //        DepartmentId = itm.ReceivingDepartment.Value,
-                                    //        PromotionId = itm.ReceivingPromotion,
-                                    //        GiftId = itm.GiftId,
-                                    //        Amount = itm.Amount,
-                                    //        UpdatedDate = date
-                                    //    };
-                                    //    ss.Save(newStore);
-                                    //}
+                                    // update store HO.
+                                    var tranferDetail = ss.Query<TransferDetail>().Where(s => s.FlagDieuChuyen == flagDieuChuyen).ToList();
+                                    foreach (var itm in tranferDetail)
+                                    {
+                                        var updateStore = ss.Query<Store>().Where(s =>
+                                            s.DepartmentId == itm.ReceivingDepartment &&
+                                            s.PromotionId == itm.ReceivingPromotion &&
+                                            s.GiftId == itm.GiftId).FirstOrDefault();
+
+                                        if (updateStore != null)
+                                        {
+                                            updateStore.Amount -= itm.Amount;
+                                            updateStore.UpdatedDate = date;
+                                        }
+
+                                        //else
+                                        //{
+                                        //    var newStore = new Store
+                                        //    {
+                                        //        Id = new Guid(),
+                                        //        DepartmentId = itm.ReceivingDepartment.Value,
+                                        //        PromotionId = itm.ReceivingPromotion,
+                                        //        GiftId = itm.GiftId,
+                                        //        Amount = itm.Amount,
+                                        //        UpdatedDate = date
+                                        //    };
+                                        //    ss.Save(newStore);
+                                        //}
+                                    }
                                 }
-                            }
+                                saveDataHPB(ss, tranfer, userinfo, status, date, stage, stageCurrent, flagDieuChuyen);
 
-                            foreach (var itm in tranfer)
-                            {
-                                itm.Status = status;
-                                itm.StageCurrent = stageCurrent;
-                                //itm.CreatedBy = userinfo.OrganizationId;
-                                itm.NguoiDuyet = userinfo.Id;
-                                itm.NgayDuyet = date;
-                                //itm.CreatedDate = date;
-                                itm.UpdateDate = date;
-
-                                var newTranferLog = new TransferGiftLog
-                                {
-                                    Id = Guid.NewGuid(),
-                                    TransferGift = itm,
-                                    AssignUserId = userinfo.Id,
-                                    AssignDeaprtmentId = userinfo.Organization.Id,
-                                    Comment = null,
-                                    Data = null,
-                                    Status = status,
-                                    UpdateDate = date,
-                                    Stage = stage,
-                                    Dealine = null,
-                                    FlagDieuChuyen = flagDieuChuyen
-                                };
-                                ss.Save(newTranferLog);
                             }
                         }
                     }
@@ -1062,6 +1096,50 @@ namespace Api.ManagerGift.Services
                 }
             }));
             return result;
+        }
+
+        public void saveDataHPB(NHibernate.ISession ss, List<TransferGift> tranfer, UserDTO userinfo, int status, DateTime date, Stage stage, Guid stageCurrent, Guid flagDieuChuyen)
+        {
+
+            try
+            {
+                foreach (var itm in tranfer)
+                {
+                    if (status == 97)
+                    {
+                        itm.CreatedBy = userinfo.Id;
+                        itm.CreatedDate = date;
+                    }
+                    else if (status == 2)
+                    {
+
+                        itm.NguoiDuyet = userinfo.Id;
+                        itm.NgayDuyet = date;
+                    }
+                    itm.Status = status;
+                    itm.StageCurrent = stageCurrent;
+                    itm.UpdateDate = date;
+
+                    var newTranferLog = new TransferGiftLog
+                    {
+                        Id = Guid.NewGuid(),
+                        TransferGift = itm,
+                        AssignUserId = userinfo.Id,
+                        AssignDeaprtmentId = userinfo.Organization.Id,
+                        Comment = null,
+                        Data = null,
+                        Status = status,
+                        UpdateDate = date,
+                        Stage = stage,
+                        Dealine = null,
+                        FlagDieuChuyen = flagDieuChuyen
+                    };
+                    ss.Save(newTranferLog);
+                }
+            }
+            catch (Exception ex)
+            {
+            }
         }
         #endregion
 

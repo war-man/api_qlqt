@@ -30,6 +30,7 @@ namespace Api.ManagerGift.Services
                         {
                             var giftPromotionId = Guid.NewGuid();
                             var giftPromotion = ConvertJsonToObject(obj.GiftPromotion);
+                            var endDate = DateTime.ParseExact(new DateTime(obj.FinishDate.Year, obj.FinishDate.Month, obj.FinishDate.Day, 23, 59, 59).ToString("yyyy-MM-dd hh:mm:ss tt"), "yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
                             if (flag == Constants.DRAFT)
                             {
                                 var newPromotion = new Promotion
@@ -44,7 +45,7 @@ namespace Api.ManagerGift.Services
                                     NumberOdEdit = 0,
                                     ConfigPromotion = obj.ConfigPromotion,
                                     StartDate = obj.StartDate,
-                                    FinishDate = obj.FinishDate,
+                                    FinishDate = endDate,
                                     Description = obj.Description,
                                     MaxGiftWithCustomer = obj.MaxGiftWithCustomer,
                                     MaxGiftInDay = obj.MaxGiftInDay,
@@ -128,7 +129,7 @@ namespace Api.ManagerGift.Services
                                         NumberOdEdit = 0,
                                         ConfigPromotion = obj.ConfigPromotion,
                                         StartDate = obj.StartDate,
-                                        FinishDate = obj.FinishDate,
+                                        FinishDate = endDate,//obj.FinishDate,
                                         Description = obj.Description,
                                         MaxGiftWithCustomer = obj.MaxGiftWithCustomer,
                                         MaxGiftInDay = obj.MaxGiftInDay,
@@ -258,6 +259,8 @@ namespace Api.ManagerGift.Services
             namePromotion = string.IsNullOrWhiteSpace(namePromotion) ? "" : namePromotion;
             status = string.IsNullOrWhiteSpace(status) ? "" : status;
             var user = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(user.PermisionId);
+            var isLDCN_PGD = isTypeUser == 3 && user.Position.IsLeader ? true : false;
             SessionManager.DoWork(ss =>
             {
                 try
@@ -272,6 +275,11 @@ namespace Api.ManagerGift.Services
                         listPromotions = listPromotions.Where(p => p.CreatedDate.Value.Year == year).ToList();
                     if(user.Position.IsLeader)
                         listPromotions = listPromotions.Where(p => p.Status != 0).ToList();
+
+                    if (isTypeUser == 3)
+                    {
+                        listPromotions = listPromotions.Where(p => p.Status == 2).ToList();
+                    }
                     var PromotionIds = listPromotions.Select(s => s.Id).Distinct().ToList();
                     Guid defaultId = Guid.NewGuid();
                     var tranfers = ss.Query<TransferGift>().Where(p => PromotionIds.Contains(p.PromotionId ?? defaultId)).
@@ -769,13 +777,14 @@ namespace Api.ManagerGift.Services
                         var giftPromotion = ConvertJsonToObjectPromotion(obj.GiftPromotion);
                         if (flag == "Update")
                         {
+                            var endDate = DateTime.ParseExact(new DateTime(obj.FinishDate.Year, obj.FinishDate.Month, obj.FinishDate.Day, 23, 59, 59).ToString("yyyy-MM-dd hh:mm:ss tt"), "yyyy-MM-dd hh:mm:ss tt", CultureInfo.InvariantCulture);
                             promotion.Code = obj.Code;
                             promotion.Name = obj.Name;
                             //promotion.Status = (int)ContextProvider.statusTransfer.Draft;
                             promotion.NumberOdEdit = 0;
                             promotion.ConfigPromotion = obj.ConfigPromotion;
                             promotion.StartDate = obj.StartDate;
-                            promotion.FinishDate = obj.FinishDate;
+                            promotion.FinishDate = endDate;
                             promotion.Description = obj.Description;
                             promotion.MaxGiftWithCustomer = obj.MaxGiftWithCustomer;
                             promotion.MaxGiftInDay = obj.MaxGiftInDay;
