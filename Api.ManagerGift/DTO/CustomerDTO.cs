@@ -1,9 +1,12 @@
-﻿using System;
+﻿using Api.ManagerGift.Services;
+using System;
+using System.Collections.Generic;
 
 namespace Api.ManagerGift.DTO
 {
     public class CustomerDTO
     {
+        public Guid Id { get; set; }
         public string Acctno { get; set; }
         public string PhanHe { get; set; }
         public string TENLOAIHINH { get; set; }
@@ -28,5 +31,7 @@ namespace Api.ManagerGift.DTO
         public string CREATEDBy { get; set; }
         public string ACTYPE { get; set; }
         public string CCYCD { get; set; }
+        public int Status { get; set; }
+        public List<QuaTangKH> QuaTangKH { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using Api.ManagerGift.Entities;
 using Api.ManagerGift.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
@@ -38,9 +39,9 @@ namespace Api.ManagerGift.Controllers
         public IActionResult TangQuaKhachHang([FromBody] CustomerDTO obj, string giftId, string promotionId, int soluong)
             => Ok(_TangQuaKhachHangService.TangQuaKhachHang(obj, giftId, promotionId, soluong, HttpContext.User));
 
-        [HttpGet("{phanhe}/{acctno}/{promotion}")]
-        public IActionResult LstTangQua(string phanhe, string acctno, string promotion)
-            => Ok(_TangQuaKhachHangService.LstKhachHangNhanQua(phanhe, acctno, promotion));
+        [HttpGet("{phanhe}/{acctno}/{promotion}/{pageNo}/{pageSize}")]
+        public IActionResult LstTangQua(string phanhe, string acctno, string promotion, int pageNo, int pageSize)
+            => Ok(_TangQuaKhachHangService.LstKhachHangNhanQua(phanhe, acctno, promotion, pageNo,pageSize, HttpContext.User));
 
         [HttpGet("Approve/{id}/{param}/{idGift}/{idPromotion}/{numGift}")]
         public IActionResult Approve(string id, string param, string idGift, string idPromotion, int numGift)
@@ -49,5 +50,10 @@ namespace Api.ManagerGift.Controllers
         [HttpGet("{id}")]
         public IActionResult DetailTangQua(string id)
             => Ok(_TangQuaKhachHangService.DetailTangQua(id));
+
+
+        [HttpPost("QuiDoi/{promotionId}")]
+        public IActionResult TangQuaKhachHangQuyDoi([FromBody] CustomerDTO obj, string promotionId)
+            => Ok(_TangQuaKhachHangService.TangQuaKhachHangQuyDoi(obj, promotionId, HttpContext.User));
     }
 }

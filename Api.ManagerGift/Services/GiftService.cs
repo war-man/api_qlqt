@@ -317,5 +317,122 @@ namespace Api.ManagerGift.Services
             }
             return result;
         }
+
+        public List<dynamic> GetIsUser(ClaimsPrincipal principal, Guid id)
+        {
+            var lstResults = new List<dynamic>();
+            var user = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(user.PermisionId);
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    lstResults = ss.Query<Gift>()
+                                    .Select(p => (dynamic)new
+                                    {
+                                        p.Id,
+                                        p.Code,
+                                        p.Name,
+                                        GiftGroupId = p.GiftGroup.Id,
+                                        GiftGroupCode = p.GiftGroup.Code,
+                                        GiftGroupName = p.GiftGroup.Name,
+                                        OptionGiftId = p.GiftGroup.OptionGift.Id,
+                                        OptionGiftCode = p.GiftGroup.OptionGift.Code,
+                                        OptionGiftName = p.GiftGroup.OptionGift.Name,
+                                        UnitId = p.Unit.Id,
+                                        UnitCode = p.Unit.Code,
+                                        UnitName = p.Unit.Name,
+                                        p.Price,
+                                        value = p.Name,
+                                        label = p.Code
+                                    }).ToList();
+                    if (ContextProvider.CheckPermission(user.PermisionId) == 3)
+                    {
+                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == user.OrganizationId && s.ReceivingPromotion == id).Select(s => s.GiftId).ToList();
+                        lstResults = lstResults.Where(w => ids.Contains(w.Id)).ToList();
+                    }
+                    if (ContextProvider.CheckPermission(user.PermisionId) == 2  || ContextProvider.CheckPermission(user.PermisionId) == 1)
+                    {
+                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingPromotion == id).Select(s => s.GiftId).ToList();
+                        lstResults = lstResults.Where(w => ids.Contains(w.Id)).ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            });
+            return lstResults;
+        }
+
+        public List<dynamic> GetGiftUse(ClaimsPrincipal principal, Guid id)
+        {
+            var lstResults = new List<dynamic>();
+            var user = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(user.PermisionId);
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    var promotion = ss.Get<Promotion>(id);
+                    var organizations = ss.Query<Organization>().ToList();
+                    var gifts = ss.Query<Gift>().ToList();
+                    var idGift = ss.Query<GiftPromotion>().Where(w=>w.GiftPromotionId== promotion.GiftPromotionId).Select(s=>s.GiftId).ToList();
+                    var list = ss.Query<CustomerGift>().GroupBy(g=>new { g.BRANCHID,g.SUBBRID, GiftId = g.Gift.Id})
+                                .Select(s => new { BranchCode= s.Key.BRANCHID, DepCode = s.Key.SUBBRID, GiftId= s.Key.GiftId }).ToList();
+                    if (ContextProvider.CheckPermission(user.PermisionId) == 3)
+                    {
+                        var codeDeps = organizations.Where(s => s.Id == user.Organization.Id || s.ParentId == user.Organization.Id).Select(s => s.Code).ToList();
+                        var ids = list.Where(s => codeDeps.Contains(s.DepCode)).Select(s => s.GiftId).ToList();
+                        lstResults = gifts.Where(w => ids.Contains(w.Id) && idGift.Contains(w.Id)).ToList().Select(p => (dynamic)new
+                        {
+                            p.Id,
+                            p.Code,
+                            p.Name,
+                            GiftGroupId = p.GiftGroup.Id,
+                            GiftGroupCode = p.GiftGroup.Code,
+                            GiftGroupName = p.GiftGroup.Name,
+                            OptionGiftId = p.GiftGroup.OptionGift.Id,
+                            OptionGiftCode = p.GiftGroup.OptionGift.Code,
+                            OptionGiftName = p.GiftGroup.OptionGift.Name,
+                            UnitId = p.Unit.Id,
+                            UnitCode = p.Unit.Code,
+                            UnitName = p.Unit.Name,
+                            p.Price,
+                            value = p.Name,
+                            label = p.Code
+                        }).ToList();
+                    }
+                    if (ContextProvider.CheckPermission(user.PermisionId) == 2 || ContextProvider.CheckPermission(user.PermisionId) == 1)
+                    {
+                        var codeDeps = organizations.Select(s => s.Code).ToList();
+                        var ids = list.Where(s => codeDeps.Contains(s.DepCode)).Select(s => s.GiftId).ToList();
+                        lstResults = gifts.Where(w => idGift.Contains(w.Id) && ids.Contains(w.Id)).ToList().Select(p => (dynamic)new
+                        {
+                            p.Id,
+                            p.Code,
+                            p.Name,
+                            GiftGroupId = p.GiftGroup.Id,
+                            GiftGroupCode = p.GiftGroup.Code,
+                            GiftGroupName = p.GiftGroup.Name,
+                            OptionGiftId = p.GiftGroup.OptionGift.Id,
+                            OptionGiftCode = p.GiftGroup.OptionGift.Code,
+                            OptionGiftName = p.GiftGroup.OptionGift.Name,
+                            UnitId = p.Unit.Id,
+                            UnitCode = p.Unit.Code,
+                            UnitName = p.Unit.Name,
+                            p.Price,
+                            value = p.Name,
+                            label = p.Code
+                        }).ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            });
+            return lstResults;
+        }
     }
 }

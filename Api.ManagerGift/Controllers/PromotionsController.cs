@@ -40,8 +40,11 @@ namespace Api.ManagerGift.Controllers
             => Ok(promotionsService.GuiDuyet(new Guid(promotionId), HttpContext.User));
 
         [HttpGet("ActionLanhDao/{IdPromotion}/{flag}")]
-        public IActionResult ActionLanhDao(string IdPromotion, string flag) 
-            => Ok(promotionsService.ActionLanhDao(new Guid(IdPromotion), flag, HttpContext.User));
+        public IActionResult ActionLanhDao(string IdPromotion, string flag)
+            => Ok(promotionsService.ActionLanhDao(new Guid(IdPromotion),"", flag, HttpContext.User));
+        [HttpPost("ActionLanhDao/TuChoi/{IdPromotion}/{flag}")]
+        public IActionResult ActionLanhDao([FromBody]  PromotionsDTO obj, string IdPromotion, string flag)
+            => Ok(promotionsService.ActionLanhDao(new Guid(IdPromotion),obj.Comment, flag, HttpContext.User));
 
         /// <summary>
         /// get danh sach chuong trinh khuyen mai.
@@ -49,6 +52,10 @@ namespace Api.ManagerGift.Controllers
         /// <returns></returns>
         [HttpGet]
         public IActionResult Get() => Ok(promotionsService.Get(HttpContext.User));
+
+        [HttpGet("Get/{OrganizationId}")]
+        public IActionResult GetPromotionDep(string OrganizationId)
+            => Ok(promotionsService.GetPromotionDep(HttpContext.User, new Guid(OrganizationId)));
 
         /// <summary>
         /// lay danh sach qua tang ung voi chuong trinh khuyen mai.
@@ -85,6 +92,11 @@ namespace Api.ManagerGift.Controllers
         {
             return Ok(promotionsService.Delete(HttpContext.User,id));
         }
+        [HttpGet("GetIsUser")]
+        public IActionResult GetIsUser() => Ok(promotionsService.GetIsUser(HttpContext.User));
+
+        [HttpGet("GetDCNB")]
+        public IActionResult GetDCNB() => Ok(promotionsService.GetDCNB(HttpContext.User));
         #endregion
     }
 }

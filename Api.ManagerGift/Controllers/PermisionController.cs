@@ -24,10 +24,15 @@ namespace Api.ManagerGift.Controllers
         [HttpGet("GetAll")]
         public IActionResult GetAll() => Ok(_PermisionService.GetAlls(HttpContext.User));
 
-        [HttpGet("GetPermision/{url}")]
-        public IActionResult GetPer(string url) => Ok(_PermisionService.GetPer(url));
+        [HttpGet("GetPermision/{id}")]
+        public IActionResult GetPer(string id) => Ok(_PermisionService.GetPer(id));
 
         [HttpPut]
         public IActionResult EditPermision([FromBody] PermisionDetail per) => Ok(_PermisionService.EditPermision(per, HttpContext.User));
+
+        [HttpGet("GetAllNav")]
+        public IActionResult GetAllNav() => Ok(_PermisionService.GetAllNavs(HttpContext.User));
+        [HttpGet("GetRootNav")]
+        public IActionResult GetRootNav() => Ok(_PermisionService.GetRootNav(HttpContext.User));
     }
 }

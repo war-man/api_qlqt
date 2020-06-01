@@ -56,12 +56,27 @@ namespace Api.ManagerGift.Controllers
         [HttpGet("GetAll")]
         public IActionResult GetAll()
         {
-            return Ok(_organizationService.GetAll());
+            return Ok(_organizationService.GetAll(HttpContext.User));
         }
         [HttpGet("GetInfoDetail")]
         public IActionResult GetInfoDetail()
         {
             return Ok(_organizationService.GetInfoDetail());
+        }
+        [HttpGet("GetBranchReport")]
+        public IActionResult GetBranchReport()
+        {
+            return Ok(_organizationService.GetBranchReport(HttpContext.User));
+        }
+        [HttpGet("GetDepartmentReport/{id}")]
+        public IActionResult GetDepartmentReport(string id)
+        {
+            return Ok(_organizationService.GetDepartmentReport(HttpContext.User, id));
+        }
+        [HttpGet("GetInUserLogin")]
+        public IActionResult GetInUserLogin()
+        {
+            return Ok(_organizationService.GetInUserLogin(HttpContext.User));
         }
     }
 }

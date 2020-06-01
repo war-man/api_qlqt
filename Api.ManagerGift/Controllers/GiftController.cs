@@ -61,5 +61,16 @@ namespace Api.ManagerGift.Controllers
         [HttpGet("GiftPromotion")]
         public IActionResult GetGift()
             => Ok(_giftService.GetGift());
+
+        [HttpGet("GetIsUser/{id}")]
+        public IActionResult GetIsUser(Guid id)
+        {
+            return Ok(_giftService.GetIsUser(HttpContext.User, id));
+        }
+        [HttpGet("GetGiftUse/{id}")]
+        public IActionResult GetGiftUse(Guid id)
+        {
+            return Ok(_giftService.GetGiftUse(HttpContext.User, id));
+        }
     }
 }

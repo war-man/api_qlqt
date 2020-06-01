@@ -40,6 +40,7 @@ namespace Api.ManagerGift.Maps
             Map(p => p.NgayDuyet);
             Map(p => p.NumGift);
             Map(p => p.CCYCD);
+            Map(p => p.ParentId);
             References(p => p.Gift).Not.LazyLoad().Column("GiftId");
             References(p => p.Promotion).Not.LazyLoad().Column("PromotionId");
         }

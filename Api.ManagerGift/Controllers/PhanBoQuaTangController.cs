@@ -47,14 +47,18 @@ namespace Api.ManagerGift.Controllers
             return Ok(_PhanBoQuaTangService.GetBranch(_flagDieuChuyen, _idGift));
         }
 
-        [HttpGet("Duyet/{flagDieuChuyen}/{flag}/{id}")]
-        public IActionResult Duyet(string flagDieuChuyen, string flag, string id)
+        [HttpPost("Duyet/{flagDieuChuyen}/{flag}/{id}")]
+        public IActionResult Duyet([FromBody] ParamDTO obj,string flagDieuChuyen, string flag, string id)
         {
             var _flagDieuChuyen = new Guid(flagDieuChuyen);
             var _id = new Guid(id);
-            return Ok(_PhanBoQuaTangService.Duyet(_flagDieuChuyen, flag, _id, HttpContext.User));
+            return Ok(_PhanBoQuaTangService.Duyet(_flagDieuChuyen, flag, _id, obj.Comment, HttpContext.User));
         }
-
+        [HttpDelete("{id}")]
+        public IActionResult Delete(Guid id)
+        {
+            return Ok(_PhanBoQuaTangService.Delete(HttpContext.User, id));
+        }
         // ================ Hoàn phân bổ quà tặng ==================//
         [HttpPost("HoanPhanBo/{flag}/{PromotionId}")]
         public IActionResult HoanPhanBo_LuuHoacGuiDuyet([FromBody] List<PhanBoQuaTang> obj, string flag, string PromotionId)
@@ -67,11 +71,17 @@ namespace Api.ManagerGift.Controllers
         {
             return Ok(_PhanBoQuaTangService.UpdateHoanPhanBoQuaTang(obj, HttpContext.User, TranferId));
         }
-        [HttpGet("HoanPhanBo/{flagDieuChuyen}/{flag}")]
-        public IActionResult HoanPhanBo_Duyet(string flagDieuChuyen, string flag)
+        [HttpPost("HoanPhanBoDuyet/{flagDieuChuyen}/{flag}")]
+        public IActionResult HoanPhanBo_Duyet([FromBody] ParamDTO obj, string flagDieuChuyen, string flag)
         {
             var _flagDieuChuyen = new Guid(flagDieuChuyen);
-            return Ok(_PhanBoQuaTangService.HoanPhanBo_Duyet(_flagDieuChuyen, flag, HttpContext.User));
+            return Ok(_PhanBoQuaTangService.HoanPhanBo_Duyet(_flagDieuChuyen, flag, obj.Comment, HttpContext.User));
+        }
+        [HttpPost("GuiDuyetHPB/{flag}/{id}")]
+        public IActionResult GuiDuyet([FromBody] List<TransferDetail> obj,string flag, string id)
+        {
+            var _id = new Guid(id);
+            return Ok(_PhanBoQuaTangService.HoanPhanBo_GuiDuyet(obj,flag, _id, HttpContext.User));
         }
     }
 }

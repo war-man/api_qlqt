@@ -252,7 +252,7 @@ namespace Api.ManagerGift.Services
         /// <summary>
         /// get danh sách promotion cho hiển thị list.
         /// </summary>
-        public dynamic Get(ClaimsPrincipal principal,int pageNo, string status, string namePromotion, int year)
+        public dynamic Get(ClaimsPrincipal principal, int pageNo, string status, string namePromotion, int year)
         {
             int pageSize = 20;
             dynamic lstResults = new ExpandoObject();
@@ -273,12 +273,12 @@ namespace Api.ManagerGift.Services
                         listPromotions = listPromotions.Where(p => p.Status == int.Parse(status)).ToList();
                     if (year != 0)
                         listPromotions = listPromotions.Where(p => p.CreatedDate.Value.Year == year).ToList();
-                    if(user.Position.IsLeader)
+                    if (user.Position.IsLeader)
                         listPromotions = listPromotions.Where(p => p.Status != 0).ToList();
-
-                    if (isTypeUser == 3)
+                    if(isTypeUser!=1&& isTypeUser!=2)
                     {
-                        listPromotions = listPromotions.Where(p => p.Status == 2).ToList();
+                        var ids = ss.Query<Store>().Where(w=>w.DepartmentId==user.Organization.Id).Select(s=>s.PromotionId).ToList();
+                        listPromotions = listPromotions.Where(p => ids.Contains(p.Id) && p.Status == 2).ToList();
                     }
                     var PromotionIds = listPromotions.Select(s => s.Id).Distinct().ToList();
                     Guid defaultId = Guid.NewGuid();
@@ -294,8 +294,7 @@ namespace Api.ManagerGift.Services
                         s.DepartmentId,
                         s.CreatedDate
                     }).Distinct().ToList();
-                    lstResults.ListPromotions =
-                        listPromotions.Skip((pageNo - 1) * pageSize).Take(pageSize)
+                    var list = listPromotions.Skip((pageNo - 1) * pageSize).Take(pageSize)
                         .Select(p => new
                         {
                             p.Id,
@@ -315,9 +314,13 @@ namespace Api.ManagerGift.Services
                             NguoiDuyet = ContextProvider.GetFullName(lstUser, p.NguoiDuyet),
                             NgayDuyet = ContextProvider.GetConvertDatetime(p.NgayDuyet),
                             Tranfers = tranfers.Where(w => w.PromotionId == p.Id && w.CreatedBy == p.CreatedBy)
-                                            .OrderByDescending(o => o.CreatedDate)
+                                            .OrderByDescending(o => o.CreatedDate),
+                            OrderByCreateDate = p.CreatedDate,
+                            StatusOrderBy = ContextProvider.OrderBy(p.Status, user.Position.IsLeader, isTypeUser),
+                            UserCreateId = p.CreatedBy,
                         }).ToList();
-                    var total = listPromotions.Count();
+                    lstResults.ListPromotions = list.OrderByDescending(o => o.OrderByCreateDate).OrderBy(p => p.StatusOrderBy).ToList();
+                    var total = list.Count();
                     lstResults.TotalPage = total % pageSize == 0 ? total / pageSize : total / pageSize + 1;
                 }
                 catch (Exception ex)
@@ -340,8 +343,20 @@ namespace Api.ManagerGift.Services
             {
                 try
                 {
-                    lstResults = ss.Query<Promotion>().Where(s => s.Status == 2)
-                                    .Select(p => (dynamic)new
+                    var lst = ss.Query<Promotion>().Where(s => s.Status == 2).ToList();
+                    if (ContextProvider.CheckPermission(user.PermisionId) == 3 || ContextProvider.CheckPermission(user.PermisionId) == 6)
+                    {
+                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == user.OrganizationId && s.TransferGift.Status==2).Select(s => s.ReceivingPromotion).ToList();
+                        lst = lst.Where(w => ids.Contains(w.Id)).ToList();
+                        var idPromotions = lst.Select(s => s.Id).ToList();
+                        var listDetails = ss.Query<TransferGift>().Where(s => idPromotions.Contains(s.PromotionId??Guid.NewGuid()) && s.DepartmentId== user.OrganizationId && s.Product.Id== Guid.Parse(Constants.ID_PRODUCT_HOAN_PHAN_BO_QUA_TANG)).ToList();
+                        lst.ForEach(pb=> {
+                            var count = 0;
+                            count = listDetails.Where(w => w.PromotionId == pb.Id).ToList().Count();
+                            pb.SoLanHPB = count;
+                        });
+                    }
+                    lstResults = lst.Select(p => (dynamic)new
                                     {
                                         p.Id,
                                         p.GiftPromotionId,
@@ -358,11 +373,6 @@ namespace Api.ManagerGift.Services
                                         value = p.Code,
                                         label = p.Name
                                     }).ToList();
-                    if(ContextProvider.CheckPermission(user.PermisionId) == 3)
-                    {
-                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == user.OrganizationId).Select(s=>s.ReceivingPromotion).ToList();
-                        lstResults = lstResults.Where(w => ids.Contains(w.Id)).ToList();
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -377,7 +387,7 @@ namespace Api.ManagerGift.Services
         /// </summary>
         /// <param name="Id">id chuong trình khuyến mãi</param>
         /// <returns></returns>
-        public List<dynamic> Get(ClaimsPrincipal principal,Guid Id)
+        public List<dynamic> Get(ClaimsPrincipal principal, Guid Id)
         {
             var lstResults = new List<dynamic>();
             var user = ContextProvider.GetUserInfo(principal);
@@ -434,7 +444,7 @@ namespace Api.ManagerGift.Services
         /// </summary>
         /// <param name="IdPromotion"></param>
         /// <returns></returns>
-        public dynamic GetPromotion(ClaimsPrincipal principal,Guid IdPromotion)
+        public dynamic GetPromotion(ClaimsPrincipal principal, Guid IdPromotion)
         {
             dynamic lstResults = new ExpandoObject();
             SessionManager.DoWork(ss =>
@@ -459,15 +469,15 @@ namespace Api.ManagerGift.Services
                                                     p.MaxGiftInDay,
                                                     p.MaxGiftWithCustomer,
                                                     p.IsChange,
-                                        //StartDate = ContextProvider.GetConvertDatetime(p.StartDate),
-                                        //FinishDate = ContextProvider.GetConvertDatetime(p.FinishDate),
-                                        StartDate = p.StartDate,
+                                                    //StartDate = ContextProvider.GetConvertDatetime(p.StartDate),
+                                                    //FinishDate = ContextProvider.GetConvertDatetime(p.FinishDate),
+                                                    StartDate = p.StartDate,
                                                     FinishDate = p.FinishDate,
                                                     CreatedBy = ContextProvider.GetFullName(lstUser, p.CreatedBy),
                                                     CreatedDate = ContextProvider.GetConvertDatetimeDDMMYYYHHmm(p.CreatedDate),
                                                     NguoiDuyet = ContextProvider.GetFullName(lstUser, p.NguoiDuyet),
                                                     NgayDuyet = ContextProvider.GetConvertDatetimeDDMMYYYHHmm(p.NgayDuyet)
-                                                }).FirstOrDefault(); 
+                                                }).FirstOrDefault();
                     #endregion
 
                     var giftPromotionId = promotion.GiftPromotionId;
@@ -483,9 +493,11 @@ namespace Api.ManagerGift.Services
                     var giftIds = giftPromotions.Select(p => p.GiftId).ToList();
                     var gifts = ss.Query<Gift>().Where(w => giftIds.Contains(w.Id)).ToList();
                     var transferDetails = ss.Query<TransferDetail>().Where(w => giftIds.Contains(w.GiftId)).ToList();
-                    var groupByTDs = transferDetails.GroupBy(g => new {
-                        g.GiftId, g.TransferGift.Id,
-                        g.TransferGift.Status 
+                    var groupByTDs = transferDetails.GroupBy(g => new
+                    {
+                        g.GiftId,
+                        g.TransferGift.Id,
+                        g.TransferGift.Status
                     }).Select(s => new
                     {
                         s.Key.GiftId,
@@ -493,7 +505,7 @@ namespace Api.ManagerGift.Services
                         Total = s.Sum(t => t.Amount)
                     }).ToList();
                     var transferGiftIds = transferDetails.Select(p => p.TransferGift.Id).Distinct().ToList();
-                    var tranferGifts = ss.Query<TransferGift>().Where(w => transferGiftIds.Contains(w.Id) && w.Status==2).ToList();
+                    var tranferGifts = ss.Query<TransferGift>().Where(w => transferGiftIds.Contains(w.Id) && w.Status == 2).ToList();
 
                     #region Kho
                     var stores = ss.Query<Store>().Where(s => giftIds.Contains(s.GiftId)).ToList();
@@ -517,7 +529,23 @@ namespace Api.ManagerGift.Services
 
                     #region SL Dieu chuyen ngang
                     var idTranDCN = tranferGifts.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_DIEU_CHUYEN_NGANG && w.Status == 2).Select(s => s.Id);
-                    var gbDCNDetails = transferDetails.Where(s => idTranDCN.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
+                    var dieuChuyenN = transferDetails.Where(s => idTranDCN.Contains(s.TransferGift.Id) && !(s.ReceivingDepartment == userinfo.Organization.Id && s.TransferDepartment != userinfo.Organization.Id)).ToList();
+                    var gbDCNDetails = dieuChuyenN.GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
+                    {
+                        s.Key.GiftId,
+                        DepartmentId = s.Key.ReceivingDepartment,
+                        Total = s.Sum(t => t.Amount)
+                    }).ToList();
+
+                    var dcNhan = transferDetails.Where(s => idTranDCN.Contains(s.TransferGift.Id) && s.ReceivingDepartment == userinfo.Organization.Id && s.TransferDepartment != userinfo.Organization.Id).ToList();
+                    var gbDCNs = dcNhan.GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
+                    {
+                        s.Key.GiftId,
+                        DepartmentId = s.Key.ReceivingDepartment,
+                        Total = s.Sum(t => t.Amount)
+                    }).ToList();
+                    var dcNgangChuyen = transferDetails.Where(s => idTranDCN.Contains(s.TransferGift.Id) && s.TransferDepartment == userinfo.Organization.Id).ToList();
+                    var gbDCNChuyens = dcNgangChuyen.GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
                     {
                         s.Key.GiftId,
                         DepartmentId = s.Key.ReceivingDepartment,
@@ -527,6 +555,7 @@ namespace Api.ManagerGift.Services
 
                     #region SL Dieu chuyen noi bo
                     var idTranDCNB = tranferGifts.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_DIEU_CHUYEN_NOI_BO && w.Status == 2).Select(s => s.Id);
+                    //var dieuChuyenNB = transferDetails.Where(s => idTranDCNB.Contains(s.TransferGift.Id) && !(s.ReceivingDepartment == userinfo.Organization.Id && s.TransferDepartment != userinfo.Organization.Id)).ToList();
                     var gbDCNBDetails = transferDetails.Where(s => idTranDCNB.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
                     {
                         s.Key.GiftId,
@@ -537,31 +566,27 @@ namespace Api.ManagerGift.Services
 
                     #region SL Phan Bo
                     var idTranPBo = tranferGifts.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_PHAN_BO && w.Status == 2).Select(s => s.Id);
-                    var gbPBoDetails = transferDetails.Where(s => idTranPBo.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
+                    var gbPBoDetails = transferDetails.Where(s => idTranPBo.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment, g.TransferGift.Status }).Select(s => new
                     {
                         s.Key.GiftId,
                         DepartmentId = s.Key.ReceivingDepartment,
+                        Status = s.Key.Status,
                         Total = s.Sum(t => t.Amount)
                     }).ToList();
                     #endregion
 
                     #region SL Hoan Phan Bo
                     var idTranHPBo = tranferGifts.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_HOAN_PHAN_BO && w.Status == 2).Select(s => s.Id);
-                    var gbHPBoDetails = transferDetails.Where(s => idTranHPBo.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
+                    var gbHPBoDetails = transferDetails.Where(s => idTranHPBo.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment,g.TransferGift.Status }).Select(s => new
                     {
                         s.Key.GiftId,
                         DepartmentId = s.Key.ReceivingDepartment,
+                        Status = s.Key.Status,
                         Total = s.Sum(t => t.Amount)
                     }).ToList();
                     #endregion
                     #region SL Qua da tang
-                    var idquatrang = tranferGifts.Where(w => w.Product.Id.ToString().ToUpper() == Constants.PARAM_HOAN_PHAN_BO && w.Status == 2).Select(s => s.Id);
-                    var gbHPBoDetaisls = transferDetails.Where(s => idTranPBo.Contains(s.TransferGift.Id)).GroupBy(g => new { g.GiftId, g.ReceivingDepartment }).Select(s => new
-                    {
-                        s.Key.GiftId,
-                        DepartmentId = s.Key.ReceivingDepartment,
-                        Total = s.Sum(t => t.Amount)
-                    }).ToList();
+                    var quaTang = ss.Query<CustomerGift>().Where(w => w.Promotion.Id == promotion.Id && w.Status == 2).ToList();
                     #endregion
 
                     var isHO = userinfo.OrganizationCode == "QLBH" ? true : false;
@@ -575,6 +600,7 @@ namespace Api.ManagerGift.Services
                         var hoanphanbos = gbHPBoDetails.Where(f => f.GiftId == itm.GiftId).ToList();
                         var dcNgangs = gbDCNDetails.Where(f => f.GiftId == itm.GiftId).ToList();
                         var dcNoiBos = gbDCNBDetails.Where(f => f.GiftId == itm.GiftId).ToList();
+                        var slDaTang = quaTang.Where(w => w.Gift.Id == itm.GiftId).Sum(s=>s.NumGift);
                         var totalXK = xuatKhos.Select(s => s.Total).Sum();
                         //var totalTonKho = tonKhos.Select(s => s.Total).Sum();
                         var totalDCN = dcNgangs.Select(s => s.Total).Sum();
@@ -585,14 +611,17 @@ namespace Api.ManagerGift.Services
                         {
                             totalXK = xuatKhos.Where(w => w.DepartmentId == userinfo.Organization.Id).Select(s => s.Total).Sum();
                             //totalTonKho = tonKhos.Where(w => w.DepartmentId == userinfo.Organization.Id).Select(s => s.Total).Sum();
-                            slPhanBo = phanbos.Where(w => w.DepartmentId == userinfo.Organization.Id).Select(s => s.Total).Sum();
-                            totalDCN = dcNgangs.Where(w => w.DepartmentId == userinfo.Organization.Id).Select(s => s.Total).Sum();
+                            var dcNgangNhans = gbDCNs.Where(f => f.GiftId == itm.GiftId).ToList();
+                            var dcNgangChuyens = gbDCNChuyens.Where(f => f.GiftId == itm.GiftId).ToList();
+                            slPhanBo = (phanbos.Where(w => w.DepartmentId == userinfo.Organization.Id && w.Status==2).Select(s => s.Total).Sum() + dcNgangNhans.Select(s => s.Total).Sum());
+                            totalDCN = dcNgangs.Where(w => w.DepartmentId == userinfo.Organization.Id).Select(s => s.Total).Sum() + dcNgangChuyens.Select(s => s.Total).Sum();
                             totalDCNB = dcNoiBos.Where(w => w.DepartmentId == userinfo.Organization.Id).Select(s => s.Total).Sum();
                             slHPhanBo = hoanphanbos.Where(w => w.DepartmentId == userinfo.Organization.Id).Select(s => s.Total).Sum();
                         }
-                        var totalTonKho = slPhanBo - totalXK - totalDCN - totalDCNB- slHPhanBo;
+                        var totalTonKho = (slPhanBo - totalXK - totalDCN - totalDCNB) + (isHO ? (+slHPhanBo ): (-slHPhanBo));
                         var totalPricePB = slPhanBo * (gift == null ? 0 : gift.Price);
-                        var item = new {
+                        var item = new
+                        {
                             Id = itm.Id,
                             Amount = itm.Amount,
                             GiftPromotionId = itm.GiftPromotionId,
@@ -605,7 +634,7 @@ namespace Api.ManagerGift.Services
                             SLHuHong = totalXK,
                             SLDCKhacDV = totalDCN,
                             SLDCNoiBo = totalDCNB,
-                            SLTang = 0,
+                            SLTang = slDaTang,
                             SLHoanPB = slHPhanBo,
                             SLTon = totalTonKho,
                             TotalPricePB = totalPricePB,
@@ -646,7 +675,44 @@ namespace Api.ManagerGift.Services
             return lstResults;
         }
 
-        public string ActionLanhDao(Guid idPromotion, string flag, ClaimsPrincipal principal)
+        public List<dynamic> GetPromotionDep(ClaimsPrincipal principal, Guid orgId)
+        {
+            var lstResults = new List<dynamic>();
+            var user = ContextProvider.GetUserInfo(principal);
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    lstResults = ss.Query<Promotion>().Where(s => s.Status == 2)
+                                    .Select(p => (dynamic)new
+                                    {
+                                        p.Id,
+                                        p.GiftPromotionId,
+                                        p.MaxGiftInDay,
+                                        p.MaxGiftWithCustomer,
+                                        p.ConfigPromotion,
+                                        p.Description,
+                                        p.IsChange,
+                                        p.Code,
+                                        p.Name,
+                                        p.Status,
+                                        p.NumberOdEdit,
+                                        p.SoLanHPB,
+                                        value = p.Code,
+                                        label = p.Name
+                                    }).ToList();
+                    var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == orgId).Select(s => s.ReceivingPromotion).ToList();
+                    lstResults = lstResults.Where(w => ids.Contains(w.Id)).ToList();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            });
+            return lstResults;
+        }
+
+        public string ActionLanhDao(Guid idPromotion, string note, string flag, ClaimsPrincipal principal)
         {
             var result = string.Empty;
             var userDTO = ContextProvider.GetUserInfo(principal);
@@ -742,6 +808,7 @@ namespace Api.ManagerGift.Services
                                 AssignUserId = userDTO.Id,
                                 AssignDeaprtmentId = userDTO.OrganizationId,
                                 UpdateDate = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture),
+                                Comment = note,
                                 Promotion = promotion
                             };
                             ss.Save(newPromotionLog);
@@ -856,7 +923,7 @@ namespace Api.ManagerGift.Services
             return result;
         }
 
-        public string Delete(ClaimsPrincipal principal,Guid id)
+        public string Delete(ClaimsPrincipal principal, Guid id)
         {
             var result = string.Empty;
             SessionManager.DoWork(ss =>
@@ -866,8 +933,9 @@ namespace Api.ManagerGift.Services
                     var obj = ss.Get<Promotion>(id);
                     if (obj != null && obj.CreatedBy == ContextProvider.GetUserInfo(principal).Id)
                     {
-                        var logs = ss.Query<PromotionLog>().Where(w=>w.Promotion.Id== id).ToList();
-                        logs.ForEach(itm=> {
+                        var logs = ss.Query<PromotionLog>().Where(w => w.Promotion.Id == id).ToList();
+                        logs.ForEach(itm =>
+                        {
                             ss.Delete(itm);
                         });
                         ss.Delete(obj);
@@ -907,5 +975,90 @@ namespace Api.ManagerGift.Services
             return listGift;
         }
         #endregion
+
+        public List<dynamic> GetIsUser(ClaimsPrincipal principal)
+        {
+            var lstResults = new List<dynamic>();
+            var user = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(user.PermisionId);
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    lstResults = ss.Query<Promotion>().Where(s => s.Status == 2)
+                                    .Select(p => (dynamic)new
+                                    {
+                                        p.Id,
+                                        p.GiftPromotionId,
+                                        p.MaxGiftInDay,
+                                        p.MaxGiftWithCustomer,
+                                        p.ConfigPromotion,
+                                        p.Description,
+                                        p.IsChange,
+                                        p.Code,
+                                        p.Name,
+                                        p.Status,
+                                        p.NumberOdEdit,
+                                        p.SoLanHPB,
+                                        value = p.Code,
+                                        label = p.Name
+                                    }).ToList();
+                    if (ContextProvider.CheckPermission(user.PermisionId) == 3)
+                    {
+                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == user.OrganizationId).Select(s => s.ReceivingPromotion).ToList();
+                        lstResults = lstResults.Where(w => ids.Contains(w.Id)).ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            });
+            return lstResults;
+        }
+
+        /// <summary>
+        /// get danh sách promotion cho combobox Điều chuyển nội bộ.
+        /// </summary>
+        /// <returns>list promotion</returns>
+        public List<dynamic> GetDCNB(ClaimsPrincipal principal)
+        {
+            var lstResults = new List<dynamic>();
+            var user = ContextProvider.GetUserInfo(principal);
+            SessionManager.DoWork(ss =>
+            {
+                try
+                {
+                    var lst = ss.Query<Promotion>().Where(s => s.Status == 2).ToList();
+                    if (ContextProvider.CheckPermission(user.PermisionId)!= 1 && ContextProvider.CheckPermission(user.PermisionId) != 2)
+                    {
+                        var ids = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == user.OrganizationId &&s.TransferGift.Status==2).Select(s => s.ReceivingPromotion).ToList();
+                        lst = lst.Where(w => ids.Contains(w.Id)).ToList();
+                    }
+                    lstResults = lst.Select(p => (dynamic)new
+                    {
+                        p.Id,
+                        p.GiftPromotionId,
+                        p.MaxGiftInDay,
+                        p.MaxGiftWithCustomer,
+                        p.ConfigPromotion,
+                        p.Description,
+                        p.IsChange,
+                        p.Code,
+                        p.Name,
+                        p.Status,
+                        p.NumberOdEdit,
+                        p.SoLanHPB,
+                        value = p.Code,
+                        label = p.Name
+                    }).ToList();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            });
+            return lstResults;
+        }
     }
 }

@@ -66,12 +66,12 @@ namespace Api.ManagerGift.Services
 
                     if (isLDCN_PGD)
                     {
-                        tranfers = tranfers.Where(w => w.Status != 0 && w.Status != 1 && w.Status != 3).ToList();
+                        tranfers = tranfers.Where(w => (w.Status != 0 && w.Status != 3) || (w.Status == 1 && w.DepartmentId == userinfo.Organization.Id)).ToList();
                     }
                     else
                     {
                         if (userinfo.Position.IsLeader)
-                            tranfers = tranfers.Where(w => w.Status != 0 && w.Status != 3).ToList();
+                            tranfers = tranfers.Where(w => w.Status != 0).ToList();
                     }
                     var listSave = new List<dynamic>();
                     tranfers.ToList().ForEach(itm =>
@@ -79,7 +79,8 @@ namespace Api.ManagerGift.Services
                         var _tranferLog = tranfersLog1.Where(f => f.TransferGift.Id == itm.Id).OrderByDescending(o => o.UpdateDate).FirstOrDefault();
                         var _transferDetail = transferDetail.FirstOrDefault(f => f.TransferId == itm.Id
                                                                  && (f.ReceivingDepartment == userinfo.Organization.Id
-                                                                     || f.TransferDepartment == userinfo.Organization.Id));
+                                                                     || f.TransferDepartment == userinfo.Organization.Id
+                                                                        || f.DepartmentId == userinfo.Organization.Id));
                         if (itm.Product.Id == Guid.Parse(Constants.ID_PRODUCT_DIEU_CHUYEN_NOI_BO))
                             _transferDetail = transferDetail.FirstOrDefault(f => f.TransferId == itm.Id);
                         if (_tranferLog != null && _transferDetail != null)
@@ -103,6 +104,7 @@ namespace Api.ManagerGift.Services
                                 itm.CreatedBy,
                                 CreatedDate = ContextProvider.GetConvertDatetime(itm.CreatedDate),
                                 CreatedDateOrderBy = itm.CreatedDate,
+                                StatusOrderBy = ContextProvider.OrderBy(itm.Status, userinfo.Position.IsLeader, isTypeUser),
                             };
                             listSave.Add(item);
                         }
@@ -136,7 +138,7 @@ namespace Api.ManagerGift.Services
                     //                       CreatedDateOrderBy = _tranfers.CreatedDate,
                     //                   }).OrderBy(v => v.Status).OrderByDescending(v => v.CreatedDateOrderBy);
 
-                    var lstTranfers = listSave.ToList().OrderBy(v => v.Status).OrderByDescending(v => v.CreatedDateOrderBy);
+                    var lstTranfers = listSave.ToList().OrderBy(v => v.StatusOrderBy).OrderByDescending(v => v.CreatedDateOrderBy);
                     lstResults.ListTranfers = lstTranfers.OrderByDescending(o => o.CreatedDateOrderBy).Skip((pageNo - 1) * pageSize).Take(pageSize).ToList();
 
                     var total = lstTranfers.Count();
@@ -308,16 +310,21 @@ namespace Api.ManagerGift.Services
                                 var checkAmount = false;
                                 foreach (var itm in lst)
                                 {
-                                    var amount = ss.Query<Store>().Where(s => s.DepartmentId == userinfo.OrganizationId &&
+                                    var amountC = ss.Query<Store>().Where(s => s.DepartmentId == userinfo.OrganizationId &&
                                         s.GiftId == new Guid(itm.GiftId) &&
-                                        s.PromotionId == new Guid(itm.PromotionId)).FirstOrDefault().Amount;
-                                    if (amount >= itm.Amount)
+                                        s.PromotionId == new Guid(itm.PromotionId)).FirstOrDefault();
+                                    var amount = amountC == null ? 0 : amountC.Amount;
+                                    var amountDetail = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == userinfo.OrganizationId &&
+                                                            s.GiftId == new Guid(itm.GiftId) &&
+                                                            s.TransferGift.PromotionId == new Guid(itm.PromotionId) &&
+                                                            s.TransferGift.Product.Id == Guid.Parse(Constants.ID_PRODUCT_XUAT_KHO)).ToList().Sum(s => s.Amount);
+                                    if ((amount - amountDetail) >= itm.Amount)
                                         checkAmount = true;
 
                                     else
                                     {
                                         checkAmount = false;
-                                        stringInfo = $"{itm.GiftName} trong kho còn: {amount} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
+                                        stringInfo = $"{itm.GiftName} trong kho còn: {(amount - amountDetail)} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
                                         break;
                                     }
                                 }
@@ -393,113 +400,125 @@ namespace Api.ManagerGift.Services
         {
             var result = string.Empty;
             var userinfo = ContextProvider.GetUserInfo(principal);
-            if (userinfo.OrganizationId == new Guid(fromOrganId) || userinfo.OrganizationId == new Guid(Constants.ID_PHONG_QUAN_LY_BAN_HANG))
+
+            SessionManager.DoWork(ss =>
             {
-                var _productId = new Guid(Constants.ID_PRODUCT_DIEU_CHUYEN_NGANG);
-                var checkAmount = false;
-                try
+                var depFrom = ss.Get<Organization>(new Guid(fromOrganId));
+                if (userinfo.OrganizationId == depFrom.ParentId || userinfo.OrganizationId == new Guid(Constants.ID_PHONG_QUAN_LY_BAN_HANG))
                 {
-                    SessionManager.DoWork(ss =>
+                    var depTo = ss.Get<Organization>(new Guid(toOrganId));
+                    if (depTo.ParentId == depFrom.ParentId)
                     {
-                        var product = ss.Get<Product>(_productId);
-                        var stage = new Stage();
-
-                        var status = 0;
-                        if (flag == Constants.DRAFT)
+                        var _productId = new Guid(Constants.ID_PRODUCT_DIEU_CHUYEN_NGANG);
+                        var checkAmount = false;
+                        try
                         {
-                            status = (int)ContextProvider.statusTransfer.Draft;
-                            stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.TAO_NHAP);
-                            result = Constants.LUU_THANH_CONG;
-                        }
+                            var product = ss.Get<Product>(_productId);
+                            var stage = new Stage();
 
-                        if (flag == Constants.INITIALIZE)
-                        {
-                            status = (int)ContextProvider.statusTransfer.Initialize;
-                            stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.GUI_DUYET);
-                            result = Constants.GUI_DUYET_THANH_CONG;
-                        }
-
-                        if (stage != null)
-                        {
-                            // valid amount gift
-                            foreach (var itm in lst)
+                            var status = 0;
+                            if (flag == Constants.DRAFT)
                             {
-                                // get amount in store:
-                                var amount = ss.Query<Store>().Where(s => s.DepartmentId == userinfo.OrganizationId &&
-                                    s.GiftId == new Guid(itm.GiftId) &&
-                                    s.PromotionId == new Guid(itm.PromotionId)).FirstOrDefault().Amount;
-                                if (amount >= itm.Amount)
-                                    checkAmount = true;
-
-                                else
-                                {
-                                    checkAmount = false;
-                                    result = $"{itm.GiftName} trong kho còn: {amount} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
-                                    break;
-                                }
+                                status = (int)ContextProvider.statusTransfer.Draft;
+                                stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.TAO_NHAP);
+                                result = Constants.LUU_THANH_CONG;
                             }
-                            if (checkAmount)
+
+                            if (flag == Constants.INITIALIZE)
                             {
+                                status = (int)ContextProvider.statusTransfer.Initialize;
+                                stage = ss.Query<Stage>().SingleOrDefault(p => p.ProductId == product.Id && p.PositionId == userinfo.Position.Id && p.Name == Constants.GUI_DUYET);
+                                result = Constants.GUI_DUYET_THANH_CONG;
+                            }
+
+                            if (stage != null)
+                            {
+                                // valid amount gift
                                 foreach (var itm in lst)
                                 {
-                                    var newTransfer = new TransferGift
-                                    {
-                                        Id = Guid.NewGuid(),
-                                        Code = CreateTranferCode(product.Code),
-                                        Product = product,
-                                        IsFinished = false, // chua dung
-                                        IsComplete = false, //lanh dao duyet => true
-                                        DepartmentId = userinfo.Organization.Id,
-                                        PromotionId = new Guid(itm.PromotionId),
-                                        Status = status,
-                                        CreatedBy = userinfo.Id,
-                                        CreatedDate = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture),
-                                        Deadline = null,
-                                        StageCurrent = stage.Id,
-                                    };
+                                    // get amount in store:
+                                    var amount = ss.Query<Store>().Where(s => s.DepartmentId == Guid.Parse(fromOrganId) &&// userinfo.OrganizationId &&
+                                        s.GiftId == new Guid(itm.GiftId) &&
+                                        s.PromotionId == new Guid(itm.PromotionId)).FirstOrDefault()?.Amount; //get detail
+                                    var amountDetail = ss.Query<TransferDetail>().Where(s => (s.ReceivingDepartment == userinfo.OrganizationId || s.TransferDepartment == depFrom.Id) &&
+                                                            s.GiftId == new Guid(itm.GiftId) &&
+                                                            s.TransferGift.PromotionId == new Guid(itm.PromotionId) &&
+                                                            s.TransferGift.Product.Id == Guid.Parse(Constants.ID_PRODUCT_DIEU_CHUYEN_NGANG)).ToList().Sum(s => s.Amount);
+                                    if ((amount - amountDetail) >= itm.Amount)
+                                        checkAmount = true;
 
-                                    var newTransferLog = new TransferGiftLog
+                                    else
                                     {
-                                        Id = Guid.NewGuid(),
-                                        TransferGift = newTransfer,
-                                        AssignUserId = userinfo.Id,
-                                        AssignDeaprtmentId = userinfo.Organization.Id,
-                                        Comment = null,
-                                        Data = null,
-                                        Status = newTransfer.Status,
-                                        UpdateDate = newTransfer.CreatedDate,
-                                        Stage = stage,
-                                        Dealine = null
-                                    };
-
-                                    ss.Save(newTransfer);
-                                    ss.Save(newTransferLog);
-
-                                    ss.Save(new TransferDetail
+                                        checkAmount = false;
+                                        result = $"{itm.GiftName} trong kho còn: {(amount - amountDetail)} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
+                                        break;
+                                    }
+                                }
+                                if (checkAmount)
+                                {
+                                    foreach (var itm in lst)
                                     {
-                                        Id = Guid.NewGuid(),
-                                        GiftId = new Guid(itm.GiftId),
-                                        Amount = itm.Amount,
-                                        TransferGift = newTransfer,
-                                        TransferDepartment = new Guid(fromOrganId),
-                                        ReceivingDepartment = new Guid(toOrganId),
-                                        ReceivingPromotion = new Guid(itm.PromotionId)
-                                    });
+                                        var newTransfer = new TransferGift
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            Code = CreateTranferCode(product.Code),
+                                            Product = product,
+                                            IsFinished = false, // chua dung
+                                            IsComplete = false, //lanh dao duyet => true
+                                            DepartmentId = userinfo.Organization.Id,
+                                            PromotionId = new Guid(itm.PromotionId),
+                                            Status = status,
+                                            CreatedBy = userinfo.Id,
+                                            CreatedDate = DateTime.ParseExact(DateTime.Now.ToString("u"), "u", CultureInfo.InvariantCulture),
+                                            Deadline = null,
+                                            StageCurrent = stage.Id,
+                                        };
+
+                                        var newTransferLog = new TransferGiftLog
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            TransferGift = newTransfer,
+                                            AssignUserId = userinfo.Id,
+                                            AssignDeaprtmentId = userinfo.Organization.Id,
+                                            Comment = null,
+                                            Data = null,
+                                            Status = newTransfer.Status,
+                                            UpdateDate = newTransfer.CreatedDate,
+                                            Stage = stage,
+                                            Dealine = null
+                                        };
+
+                                        ss.Save(newTransfer);
+                                        ss.Save(newTransferLog);
+
+                                        ss.Save(new TransferDetail
+                                        {
+                                            Id = Guid.NewGuid(),
+                                            GiftId = new Guid(itm.GiftId),
+                                            Amount = itm.Amount,
+                                            TransferGift = newTransfer,
+                                            TransferDepartment = new Guid(fromOrganId),
+                                            ReceivingDepartment = new Guid(toOrganId),
+                                            ReceivingPromotion = new Guid(itm.PromotionId)
+                                        });
+                                    }
                                 }
                             }
+                            else
+                                result = Constants.CHUC_NANG_NHAN_VIEN;
                         }
-                        else
-                            result = Constants.CHUC_NANG_NHAN_VIEN;
-                    });
+                        catch (Exception ex)
+                        {
+                            result = ex.Message;
+                            Console.WriteLine(result);
+                        }
+                    }
+                    else
+                        result = "Đơn vị chuyển và đơn vị nhận. Phải cùng trực thuộc Ngân hàng xây dựng hoặc Chi nhánh!";
                 }
-                catch (Exception ex)
-                {
-                    result = ex.Message;
-                    Console.WriteLine(result);
-                }
-            }
-            else
-                result = "Bạn không được điều chuyển ngang từ đơn vị khác!";
+                else
+                    result = "Đơn vị chuyển không trực thuộc đơn vị của bạn!";
+            });
             return result;
         }
 
@@ -535,25 +554,38 @@ namespace Api.ManagerGift.Services
 
                     if (stage != null)
                     {
+                        var stores = ss.Query<Store>().Where(s => s.DepartmentId == userinfo.OrganizationId).ToList();
+                        var storeFroms = stores.Where(s => s.PromotionId == new Guid(fromPromotionId)).ToList();
+                        var storeTos = stores.Where(s => s.PromotionId == new Guid(toPromotionId)).ToList();
+                        var promotionTo = ss.Get<Promotion>(Guid.Parse(toPromotionId));
+                        var details = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == userinfo.OrganizationId &&
+                            s.TransferGift.PromotionId == new Guid(fromPromotionId)
+                            && s.TransferGift.Product.Id == Guid.Parse(Constants.ID_PRODUCT_DIEU_CHUYEN_NOI_BO)).ToList();
                         // valid amount gift
                         foreach (var itm in lst)
                         {
-                            // get amount in store:
-                            var amount = ss.Query<Store>().Where(s => s.DepartmentId == userinfo.OrganizationId &&
-                            s.GiftId == new Guid(itm.GiftId) &&
-                            s.PromotionId == new Guid(fromPromotionId)).FirstOrDefault().Amount;
-                            //get detail
-                            var amountDetail = ss.Query<TransferDetail>().Where(s => s.ReceivingDepartment == userinfo.OrganizationId &&
-                                                    s.GiftId == new Guid(itm.GiftId) &&
-                                                    s.TransferGift.PromotionId == new Guid(fromPromotionId) &&
-                                                    s.TransferGift.Product.Id == Guid.Parse(Constants.ID_PRODUCT_DIEU_CHUYEN_NOI_BO)).ToList().Sum(s => s.Amount);
-                            if ((amount - amountDetail) >= itm.Amount)
-                                checkAmount = true;
+                            if (storeTos.Any(a => a.GiftId == new Guid(itm.GiftId)))
+                            {
+                                // get amount in store:
+                                var amountC = storeFroms.Where(s => s.GiftId == new Guid(itm.GiftId)).FirstOrDefault();
+                                var amount = amountC == null ? 0 : amountC.Amount;
+                                //get detail
+                                var amountDetail = details.Where(s => s.ReceivingDepartment == userinfo.OrganizationId &&
+                                                        s.GiftId == new Guid(itm.GiftId)).ToList().Sum(s => s.Amount);
+                                if ((amount - amountDetail) >= itm.Amount)
+                                    checkAmount = true;
 
+                                else
+                                {
+                                    checkAmount = false;
+                                    result = $"{itm.GiftName} trong kho còn: {(amount - amountDetail)} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
+                                    break;
+                                }
+                            }
                             else
                             {
                                 checkAmount = false;
-                                result = $"{itm.GiftName} trong kho còn: {(amount - amountDetail)} < {itm.Amount}!\nAnh/Chị vui lòng kiểm tra lại.";
+                                result = $"{itm.GiftName} không tồn tại trong CTKM: {promotionTo.Name}!\nAnh/Chị vui lòng kiểm tra lại.";
                                 break;
                             }
                         }
@@ -705,7 +737,7 @@ namespace Api.ManagerGift.Services
                             AssignDeaprtmentId = userinfo.Organization.Id,
                             Comment = null,
                             Data = null,
-                            Status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve,
+                            Status = productId.ToUpper() == Constants.PARAM_XUAT_KHO ? (int)ContextProvider.statusTransfer.Approve : (isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve),
                             UpdateDate = dateNow,
                             Stage = stage,
                             Dealine = null
@@ -762,7 +794,7 @@ namespace Api.ManagerGift.Services
 
                             case Constants.PARAM_XUAT_KHO:
 
-                                transfer.Status = isLDCN_PGD ? 4 : (int)ContextProvider.statusTransfer.Approve;
+                                transfer.Status = (int)ContextProvider.statusTransfer.Approve;
                                 ss.Save(transferlog);
 
                                 foreach (var itm in lstTransferDetail)
@@ -924,7 +956,7 @@ namespace Api.ManagerGift.Services
             return result;
         }
 
-        public string LanhDaoTuChoiDuyet(Guid transferId, string productId, ClaimsPrincipal principal)
+        public string LanhDaoTuChoiDuyet(Guid transferId, string note, string productId, ClaimsPrincipal principal)
         {
             var result = string.Empty;
             var userinfo = ContextProvider.GetUserInfo(principal);
@@ -950,7 +982,7 @@ namespace Api.ManagerGift.Services
                             TransferGift = transfer,
                             AssignUserId = userinfo.Id,
                             AssignDeaprtmentId = userinfo.Organization.Id,
-                            Comment = null,
+                            Comment = note,
                             Data = null,
                             Status = transfer.Status,
                             UpdateDate = dateNow,
@@ -991,6 +1023,7 @@ namespace Api.ManagerGift.Services
                             DonViThucHien = ContextProvider.GetOrganizationName(organization, p.AssignDeaprtmentId),
                             NguoiThucHien = ContextProvider.GetFullName(lstUser, p.AssignUserId),
                             p.Status,
+                            p.Comment,
                             UpdateDate = ContextProvider.GetConvertDatetimeDDMMYYYHHmm(p.UpdateDate)
                         }).ToList();
                     result = logTranfer;
@@ -1035,6 +1068,7 @@ namespace Api.ManagerGift.Services
             Random random = new Random();
             return random.Next(min, max);
         }
+
 
         private string RandomString(int size)
         {
@@ -1332,7 +1366,7 @@ namespace Api.ManagerGift.Services
                 try
                 {
                     ss.CreateSQLQuery($"delete [TransferDetail] where TransferId = '{id}'").UniqueResult();
-                    ss.CreateSQLQuery($"delete [[TransferGiftLog]] where TransferGiftId = '{id}'").UniqueResult();
+                    ss.CreateSQLQuery($"delete [TransferGiftLog] where TransferGiftId = '{id}'").UniqueResult();
                     ss.CreateSQLQuery($"delete [TransferGift] where Id = '{id}'").UniqueResult();
                     result = "Đã xóa";
                 }

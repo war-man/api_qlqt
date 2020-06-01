@@ -11,9 +11,10 @@ namespace Api.ManagerGift.Maps
     {
         public CustomerGiftLogMap()
         {
-            Table("CustomerGirftLog");
+            Table("CustomerGiftLog");
             Id(p => p.Id);
-            References(p => p.CustomerGift).Not.LazyLoad().Column("CustomerGiftId");
+            //References(p => p.CustomerGift).Not.LazyLoad().Column("CustomerGiftId");
+            Map(p => p.CustomerGiftId);
             Map(p => p.AssignUserId);
             Map(p => p.AssignDeaprtmentId);
             Map(p => p.Comment);

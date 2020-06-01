@@ -105,11 +105,11 @@ namespace Api.ManagerGift.Controllers
             return Ok(_transferService.LanhDaoDuyet(_idTranfer, productId, HttpContext.User));
         }
 
-        [HttpGet("LanhDaoTuChoiDuyet/{idTranfer}/{productId}")]
-        public IActionResult LanhDaoTuChoiDuyet(string idTranfer, string productId)
+        [HttpPost("LanhDaoTuChoiDuyet/{idTranfer}/{productId}")]
+        public IActionResult LanhDaoTuChoiDuyet([FromBody] DataNhapKho obj ,string idTranfer, string productId)
         {
             var _idTranfer = new Guid(idTranfer);
-            return Ok(_transferService.LanhDaoTuChoiDuyet(_idTranfer, productId, HttpContext.User));
+            return Ok(_transferService.LanhDaoTuChoiDuyet(_idTranfer, obj.Note, productId, HttpContext.User));
         }
 
         [HttpGet("TranferHistory/{idTranfer}")]

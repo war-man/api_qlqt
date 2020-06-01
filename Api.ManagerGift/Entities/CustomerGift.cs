@@ -5,6 +5,7 @@ namespace Api.ManagerGift.Entities
     public class CustomerGift
     {
         public virtual Guid Id { get; set; }
+        public virtual Guid ParentId { get; set; }
         public virtual string Acctno { get; set; }
         public virtual string TENLOAIHINH { get; set; }
         public virtual string CusName { get; set; }

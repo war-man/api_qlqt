@@ -13,9 +13,8 @@ namespace Api.ManagerGift.Maps
             Map(p => p.ActionCode);
             Map(p => p.ActionName);
             Map(p => p.CheckAction);
-            Map(p => p.Url);
+            Map(p => p.NavId);
             Map(p => p.PermisionId);
-            Map(p => p.NavName);
         }
     }
 }

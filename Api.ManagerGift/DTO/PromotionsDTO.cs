@@ -22,5 +22,6 @@ namespace Api.ManagerGift.DTO
         public int MaxGiftInDay { get; set; }
         public bool IsChange { get; set; }
         public int SoLanHPB { get; set; }
+        public string Comment { get; set; }
     }
 }

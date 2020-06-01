@@ -5,6 +5,7 @@ using System;
 using AutoMapper;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 
 namespace Api.ManagerGift.Services
 {
@@ -253,14 +254,18 @@ namespace Api.ManagerGift.Services
             return result;
         }
 
-        public List<dynamic> GetAll()
+        public List<dynamic> GetAll(ClaimsPrincipal principal)
         {
             var lstResults = new List<dynamic>();
+            var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
             try
             {
                 SessionManager.DoWork(ss => {
-                    lstResults = ss.Query<Organization>()
-                        .Select(p => (dynamic)new
+                    var orgs = ss.Query<Organization>().ToList();
+                    if (isTypeUser == 3)
+                        orgs = orgs.Where(w => w.ParentId == userinfo.Organization.Id).ToList();
+                    lstResults = orgs.Select(p => (dynamic)new
                         {
                             p.Id,
                             p.Name,
@@ -322,6 +327,110 @@ namespace Api.ManagerGift.Services
                 regionName = "Miền Nam";
 
             return regionName;
+        }
+
+        public List<dynamic> GetBranchReport(ClaimsPrincipal principal)
+        {
+            var lstResults = new List<dynamic>();
+            var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+            try
+            {
+                SessionManager.DoWork(ss => {
+                    var list = ss.Query<Organization>().Where(p => p.ManageCode == "CN").ToList();
+                    if (isTypeUser != 1 && isTypeUser != 2)
+                        list = list.Where(w => w.Id==userinfo.Organization.Id).ToList();
+                    lstResults = list.Select(p => (dynamic)new
+                        {
+                            p.Id,
+                            p.Name,
+                            p.Code,
+                            p.ManageCode,
+                            p.ParentId,
+                            p.Address,
+                            p.Region,
+                            value = p.Id,
+                            label = p.Name
+                        }).ToList();
+                });
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return lstResults;
+        }
+
+        public List<dynamic> GetDepartmentReport(ClaimsPrincipal principal,string id)
+        {
+            var lstResults = new List<dynamic>();
+            var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+            try
+            {
+                SessionManager.DoWork(ss => {
+                    var list = ss.Query<Organization>().Where(p => p.ManageCode == "PGD" && p.ParentId == new Guid(id)).ToList();
+                    if (isTypeUser == 3)
+                    {
+                        if(userinfo.Position.IsLeader)
+                            list = list.Where(w => w.ParentId == userinfo.Organization.Id || w.Id == userinfo.Organization.Id).ToList();
+                        else
+                            list = list.Where(w => w.Id == userinfo.Organization.Id).ToList();
+                    }
+                    lstResults = list
+                        .Select(p => (dynamic)new
+                        {
+                            p.Id,
+                            p.Name,
+                            p.Code,
+                            p.ManageCode,
+                            p.ParentId,
+                            p.Address,
+                            p.Region,
+                            value = p.Id,
+                            label = p.Name
+                        }).ToList();
+                });
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return lstResults;
+        }
+
+        public List<dynamic> GetInUserLogin(ClaimsPrincipal principal)
+        {
+            var lstResults = new List<dynamic>();
+            var userinfo = ContextProvider.GetUserInfo(principal);
+            var isTypeUser = ContextProvider.CheckPermission(userinfo.PermisionId);
+            try
+            {
+                SessionManager.DoWork(ss => {
+                    var list = ss.Query<Organization>().ToList();
+                    if (isTypeUser == 1 || isTypeUser == 2)
+                        list = list.Where(p => p.ManageCode == "CN").ToList();
+                    else
+                        list = list.Where(p => p.ManageCode == "PGD" && (p.ParentId==userinfo.Organization.Id || p.Id == userinfo.Organization.Id)).ToList();
+                    lstResults = list.Select(p => (dynamic)new
+                    {
+                        p.Id,
+                        p.Name,
+                        p.Code,
+                        p.ManageCode,
+                        p.ParentId,
+                        p.Address,
+                        p.Region,
+                        value = p.Id,
+                        label = p.Name
+                    }).ToList();
+                });
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return lstResults;
         }
     }
 }
